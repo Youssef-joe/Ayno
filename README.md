@@ -4,33 +4,9 @@ Multi-tenant realtime platform built with Elixir Phoenix. Supports WebSocket and
 
 
 # CLIENT APPLICATIONS
+Applications Layer:
 
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│  Chat App   │   │ Trading App │   │  Game App   │   │   Any App   │
-└─────┬───────┘   └─────┬───────┘   └─────┬───────┘   └─────┬───────┘
-      │                │                │                │
-      │   WebSocket / standardized HTTP API (SDKs)       │
-      ▼                                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│               REALTIME ENGINE GATEWAY (Elixir Phoenix)             │
-│  - Multi-tenant channels (room:*, ticker:*, match:*, post:*)       │
-│  - Features: Auth, Rate Limiting, Presence, Metrics, Pub/Sub       │
-└────────────────────────────────────────────────────────────────────┘
-                │ gRPC / HTTP events                       │
-                ▼                                          ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                     PROCESSING LAYER (Go)                          │
-│  - App Handlers: filtering, analytics, storage, webhooks           │
-│  - Plugin API / Webhook for custom processing                      │
-│  - Core: Event routing, batching, persistence, replay              │
-└────────────────────────────────────────────────────────────────────┘
-                │ High-speed UDP (optional for ultra-low latency)
-                ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                 HIGH-PERFORMANCE LAYER (C++ optional)              │
-│  - <1ms latency, custom binary protocols, hardware optim.          │
-└────────────────────────────────────────────────────────────────────┘
-
+<img width="1263" height="750" alt="image" src="https://github.com/user-attachments/assets/677b08a5-bd17-4e74-ac7b-979a954ebbe9" />
 
 STORAGE & INFRASTRUCTURE
 - Redis: sessions, presence, ephemeral state, rate limits
