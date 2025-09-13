@@ -1,0 +1,42 @@
+# Elixir
+/_build
+/cover
+/deps
+/doc
+/.fetch
+erl_crash.dump
+*.ez
+*.beam
+/config/*.secret.exs
+.elixir_ls/
+
+# Go
+go_processor/processor
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# C++
+cpp_driver/driver
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Benchmarks
+benchmarks/cpp_benchmark
+benchmarks/*.out
+
+# General
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.tmp
+node_modules/
