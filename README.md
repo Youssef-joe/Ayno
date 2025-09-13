@@ -2,6 +2,50 @@
 
 Multi-tenant realtime platform built with Elixir Phoenix. Supports WebSocket and HTTP APIs for chat, trading, gaming, and any realtime application.
 
+
+CLIENT APPLICATIONS
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│ Chat App    │  │ Trading App │  │ Game App    │  │ Any App     │
+└─────┬───────┘  └─────┬───────┘  └─────┬───────┘  └─────┬───────┘
+      │               │               │               │
+      │  WebSocket / standardized HTTP API (SDKs)     │
+      ▼                                              ▼
+┌────────────────────────────────────────────────────────────────┐
+│                   REALTIME ENGINE GATEWAY (Elixir Phoenix)     │
+│  - Multi-tenant channels (room:*, ticker:*, match:*, post:*)   │
+│  - Features: Auth, Rate Limiting, Presence, Metrics, Pub/Sub   │
+└────────────────────────────────────────────────────────────────┘
+            │ gRPC / HTTP events                      │
+            ▼                                         ▼
+┌────────────────────────────────────────────────────────────────┐
+│                       PROCESSING LAYER (Go)                   │
+│  - App Handlers: filtering, analytics, storage, webhooks      │
+│  - Plugin API / Webhook for custom processing                 │
+│  - Core: Event routing, batching, persistence, replay         │
+└────────────────────────────────────────────────────────────────┘
+            │ High-speed UDP (optional for ultra-low latency)    
+            ▼
+┌────────────────────────────────────────────────────────────────┐
+│                 HIGH-PERFORMANCE LAYER (C++ optional)         │
+│  - <1ms latency, custom binary protocols, hardware optim.     │
+└────────────────────────────────────────────────────────────────┘
+
+STORAGE & INFRASTRUCTURE
+- Redis: sessions, presence, ephemeral state, rate limits
+- TimescaleDB / Postgres: event history, analytics, auditing
+- Metrics: Prometheus + Grafana, alerting channels
+- Config & secrets: vault/config-store
+
+---
+
+## Design Goals
+- Multi-tenant: isolate apps by `app-id` and channel namespaces.
+- Predictable APIs: consistent SDK behavior across apps.
+- Pluggable processing: per-app handlers and webhook plugins.
+- Observability: metrics, traces, per-tenant rate-limits and SLAs.
+- Optional low-latency path for gaming/trading workloads.
+
+
 ## Features
 
 - **Multi-tenant channels**: `room:*`, `ticker:*`, `match:*`, `post:*`
@@ -100,3 +144,8 @@ end
 ## Examples
 
 See `examples/chat_example.html` for a working chat implementation.
+
+
+
+
+Concise, production-oriented system design for a multi-tenant realtime platform. Optimized for inclusion in a repository README preview.
