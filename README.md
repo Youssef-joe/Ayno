@@ -3,32 +3,34 @@
 Multi-tenant realtime platform built with Elixir Phoenix. Supports WebSocket and HTTP APIs for chat, trading, gaming, and any realtime application.
 
 
-CLIENT APPLICATIONS
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ Chat App    │  │ Trading App │  │ Game App    │  │ Any App     │
-└─────┬───────┘  └─────┬───────┘  └─────┬───────┘  └─────┬───────┘
-      │               │               │               │
-      │  WebSocket / standardized HTTP API (SDKs)     │
-      ▼                                              ▼
-┌────────────────────────────────────────────────────────────────┐
-│                   REALTIME ENGINE GATEWAY (Elixir Phoenix)     │
-│  - Multi-tenant channels (room:*, ticker:*, match:*, post:*)   │
-│  - Features: Auth, Rate Limiting, Presence, Metrics, Pub/Sub   │
-└────────────────────────────────────────────────────────────────┘
-            │ gRPC / HTTP events                      │
-            ▼                                         ▼
-┌────────────────────────────────────────────────────────────────┐
-│                       PROCESSING LAYER (Go)                   │
-│  - App Handlers: filtering, analytics, storage, webhooks      │
-│  - Plugin API / Webhook for custom processing                 │
-│  - Core: Event routing, batching, persistence, replay         │
-└────────────────────────────────────────────────────────────────┘
-            │ High-speed UDP (optional for ultra-low latency)    
-            ▼
-┌────────────────────────────────────────────────────────────────┐
-│                 HIGH-PERFORMANCE LAYER (C++ optional)         │
-│  - <1ms latency, custom binary protocols, hardware optim.     │
-└────────────────────────────────────────────────────────────────┘
+# CLIENT APPLICATIONS
+
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│  Chat App   │   │ Trading App │   │  Game App   │   │   Any App   │
+└─────┬───────┘   └─────┬───────┘   └─────┬───────┘   └─────┬───────┘
+      │                │                │                │
+      │   WebSocket / standardized HTTP API (SDKs)       │
+      ▼                                                 ▼
+┌────────────────────────────────────────────────────────────────────┐
+│               REALTIME ENGINE GATEWAY (Elixir Phoenix)             │
+│  - Multi-tenant channels (room:*, ticker:*, match:*, post:*)       │
+│  - Features: Auth, Rate Limiting, Presence, Metrics, Pub/Sub       │
+└────────────────────────────────────────────────────────────────────┘
+                │ gRPC / HTTP events                       │
+                ▼                                          ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                     PROCESSING LAYER (Go)                          │
+│  - App Handlers: filtering, analytics, storage, webhooks           │
+│  - Plugin API / Webhook for custom processing                      │
+│  - Core: Event routing, batching, persistence, replay              │
+└────────────────────────────────────────────────────────────────────┘
+                │ High-speed UDP (optional for ultra-low latency)
+                ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                 HIGH-PERFORMANCE LAYER (C++ optional)              │
+│  - <1ms latency, custom binary protocols, hardware optim.          │
+└────────────────────────────────────────────────────────────────────┘
+
 
 STORAGE & INFRASTRUCTURE
 - Redis: sessions, presence, ephemeral state, rate limits
