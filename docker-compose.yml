@@ -1,29 +1,49 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"  # For HTTPS
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - polyglot
+    restart: unless-stopped
+
   polyglot:
     build: .
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     depends_on:
       - redis
+      - go-processor
     environment:
       - MIX_ENV=prod
       - SECRET_KEY_BASE=your-secret-key-base-change-in-production
+      - REDIS_HOST=redis
+    restart: unless-stopped
+    # Scale with: docker-compose up --scale polyglot=3
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
+    restart: unless-stopped
 
   go-processor:
     build:
       context: ./go_processor
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
+    restart: unless-stopped
+    # Scale with: docker-compose up --scale go-processor=2
 
   # Optional: Uncomment when C++ is available
   # cpp-driver:
   #   build:
   #     context: ./cpp_driver
-  #   command: ["./driver"]
+  #   expose:
+  #     - "9090"  # Example port
+  #   restart: unless-stopped
