@@ -65,7 +65,7 @@ func runBenchmark(requests int, concurrency int) {
 	fmt.Printf("Avg latency: %v\n", avg)
 }
 
-func main() {
+func Main() {
 	fmt.Println("=== Polyglot Performance Benchmark ===")
 	
 	runBenchmark(1000, 10)
