@@ -11,7 +11,7 @@ defmodule Polyglot.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+  # Run ya jjoooe mtnsash "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {Polyglot.Application, []},
@@ -28,6 +28,6 @@ defmodule Polyglot.MixProject do
       {:jason, "~> 1.2"},
       {:redix, "~> 1.2"},
       {:httpoison, "~> 2.0"}
-    ]
+  ]
   end
 end

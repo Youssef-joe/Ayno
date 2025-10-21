@@ -1,129 +1,106 @@
 # Polyglot Realtime Engine
 
-Multi-tenant realtime platform built with Elixir Phoenix. Supports WebSocket and HTTP APIs for chat, trading, gaming, and any realtime application.
+A multi-tenant realtime platform built with Elixir Phoenix, supporting WebSocket and HTTP APIs for chat, trading, gaming, and any realtime application.
 
+## Architecture
 
-# CLIENT APPLICATIONS
-Applications Layer:
-
-<img width="1263" height="750" alt="image" src="https://github.com/user-attachments/assets/677b08a5-bd17-4e74-ac7b-979a954ebbe9" />
-
-STORAGE & INFRASTRUCTURE
-- Redis: sessions, presence, ephemeral state, rate limits
-- TimescaleDB / Postgres: event history, analytics, auditing
-- Metrics: Prometheus + Grafana, alerting channels
-- Config & secrets: vault/config-store
-
----
-
-## Design Goals
-- Multi-tenant: isolate apps by `app-id` and channel namespaces.
-- Predictable APIs: consistent SDK behavior across apps.
-- Pluggable processing: per-app handlers and webhook plugins.
-- Observability: metrics, traces, per-tenant rate-limits and SLAs.
-- Optional low-latency path for gaming/trading workloads.
-
-
-## Features
-
-- **Multi-tenant channels**: `room:*`, `ticker:*`, `match:*`, `post:*`
-- **WebSocket & HTTP APIs**: Real-time and REST endpoints
-- **Authentication**: Token-based auth per app and user
-- **Rate limiting**: Per-tenant limits (Redis-backed)
-- **Pub/Sub**: Phoenix PubSub for message distribution
+- **Elixir Gateway**: Phoenix WebSocket/HTTP server with multi-tenant channels
+- **Go Processor**: Event processing and analytics (HTTP on port 8080)
+- **C++ Driver**: Ultra-low latency processing (optional)
+- **Storage**: In-memory ETS for history, Redis for sessions
 
 ## Quick Start
 
-1. Build all components:
+### Using Docker (Recommended)
+
 ```bash
-make all
+docker-compose up --build
+```
+
+### Manual Setup
+
+1. Build components:
+```bash
+make all  # or manually: cd go_processor && go build -o processor main.go
 ```
 
 2. Start services:
 ```bash
-# Terminal 1: Elixir Gateway
-make start-elixir
+# Terminal 1: Go Processor
+cd go_processor && ./processor
 
-# Terminal 2: Go Processor
-make start-go
+# Terminal 2: Elixir Gateway
+mix deps.get
+mix phx.server
 ```
 
-3. Run benchmarks:
+3. Test:
 ```bash
-# Full system benchmark (starts all services)
-./run_benchmark.sh
+# Health check
+curl http://localhost:4000/health
 
-# Quick component-only benchmark
-./quick_benchmark.sh
+# Publish event
+curl -X POST http://localhost:4000/apps/demo-app/channels/room:test/publish \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: valid_key_demo-app" \
+  -d '{"type": "message", "data": {"text": "Hello World"}}'
 
-# Manual benchmark
-make benchmark-all
+# Get history
+curl http://localhost:4000/apps/demo-app/channels/room:test/history
 ```
 
-3. Connect via WebSocket:
+## API
+
+### WebSocket
+
 ```javascript
+import { Socket } from "phoenix";
+
 const socket = new Socket("ws://localhost:4000/socket", {
   params: { app_id: "your-app", token: "valid_token_user123" }
 });
-```
 
-## API Examples
+socket.connect();
 
-### WebSocket
-```javascript
-// Subscribe to a room
 const channel = socket.channel("room:lobby", {});
 channel.join();
-
-// Publish message
-channel.push("publish", {
-  type: "message", 
-  data: { text: "Hello" }
-});
+channel.on("event", (event) => console.log(event));
 ```
 
-### REST API
+### HTTP
+
 ```bash
-# Publish event
-curl -X POST http://localhost:4000/apps/chat-app/channels/room:lobby/publish \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: valid_key_chat-app" \
+# Publish
+curl -X POST /apps/{app_id}/channels/{channel}/publish \
+  -H "X-API-Key: valid_key_{app_id}" \
   -d '{"type": "message", "data": {"text": "Hello"}}'
 
-# Get history
-curl http://localhost:4000/apps/chat-app/channels/room:lobby/history
-```
-
-## Architecture
-
-```
-CLIENT APPS → ELIXIR GATEWAY → GO PROCESSOR → C++ DRIVER (optional)
-     ↓              ↓              ↓              ↓
- WebSocket/HTTP   PubSub      Analytics    Ultra-low latency
-```
-
-- **Elixir Gateway**: Phoenix WebSocket/HTTP endpoints, multi-tenant channels
-- **Go Processor**: Event processing, analytics, storage, webhooks
-- **C++ Driver**: <1ms latency for trading/gaming (optional)
-- **Storage**: Redis for sessions, TimescaleDB for events
-
-## Installation
-
-Add to your `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:polyglot, "~> 0.1.0"}
-  ]
-end
+# History
+curl /apps/{app_id}/channels/{channel}/history
 ```
 
 ## Examples
 
-See `examples/chat_example.html` for a working chat implementation.
+See `examples/` directory for client implementations in HTML/JavaScript and Python.
 
+## Testing
 
+Run benchmarks:
+```bash
+mix run benchmarks/benchmark.exs
+```
 
+Run tests:
+```bash
+mix test
+```
 
-Concise, production-oriented system design for a multi-tenant realtime platform. Optimized for inclusion in a repository README preview.
+## Development
+
+- Elixir 1.17+
+- Go 1.21+
+- Redis (optional, for future persistence)
+
+## License
+
+MIT

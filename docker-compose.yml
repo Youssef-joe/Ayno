@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  polyglot:
+    build: .
+    ports:
+      - "4000:4000"
+    depends_on:
+      - redis
+    environment:
+      - MIX_ENV=prod
+      - SECRET_KEY_BASE=your-secret-key-base-change-in-production
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  go-processor:
+    build:
+      context: ./go_processor
+    ports:
+      - "8080:8080"
+
+  # Optional: Uncomment when C++ is available
+  # cpp-driver:
+  #   build:
+  #     context: ./cpp_driver
+  #   command: ["./driver"]

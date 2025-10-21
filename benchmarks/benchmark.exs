@@ -48,11 +48,23 @@ defmodule Polyglot.Benchmark do
   end
   
   defp simulate_client(client_id, message_count) do
-    # Simulate WebSocket client sending messages
-    for _ <- 1..message_count do
+    # Simulate client by sending HTTP publish requests
+    for i <- 1..message_count do
+      url = "http://localhost:4000/apps/benchmark-app/channels/room:test/publish"
+      headers = [{"Content-Type", "application/json"}, {"X-API-Key", "valid_key_benchmark-app"}]
+      body = Jason.encode!(%{
+        type: "message",
+        data: %{text: "test message #{client_id}-#{i}"}
+      })
+
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %HTTPoison.Response{status_code: 200}} -> :ok
+        _ -> :error
+      end
+
+      # Small delay to simulate realistic pacing
       :timer.sleep(1)
     end
-    :ok
   end
   
   defp http_request(request_id) do

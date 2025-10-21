@@ -16,6 +16,12 @@ defmodule Polyglot do
     }
 
     Phoenix.PubSub.broadcast(Polyglot.PubSub, "#{app_id}:#{channel}", {:event, event})
+
+    # Send to Go processor for additional processing
+    Task.start(fn ->
+      HTTPoison.post("http://localhost:8080/process", Jason.encode!(event), [{"Content-Type", "application/json"}])
+    end)
+
     {:ok, event.id}
   end
 end

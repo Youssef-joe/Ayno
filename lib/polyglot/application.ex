@@ -5,6 +5,7 @@ defmodule Polyglot.Application do
     children = [
       {Phoenix.PubSub, name: Polyglot.PubSub},
       {Redix, name: :redix},
+      Polyglot.Storage,
       Polyglot.Gateway.Endpoint
     ]
 
