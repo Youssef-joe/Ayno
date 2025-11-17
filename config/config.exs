@@ -1,7 +1,9 @@
 import Config
 
 # Load environment variables
-Dotenvy.source!(["#{config_env()}.env", ".env"])
+if Code.ensure_loaded?(Dotenvy) do
+  Dotenvy.source!(["#{config_env()}.env", ".env"])
+end
 
 # Get required secrets
 secret_key_base = System.fetch_env!("SECRET_KEY_BASE")
