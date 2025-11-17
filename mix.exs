@@ -23,7 +23,7 @@ defmodule Polyglot.MixProject do
     [
       {:phoenix, "~> 1.7"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_pubsub_redis, "~> 1.1"},
+      {:phoenix_pubsub_redis, "~> 3.0"},
       {:plug_cowboy, "~> 2.5"},
       {:jason, "~> 1.2"},
       {:redix, "~> 1.2"},
