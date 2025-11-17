@@ -19,16 +19,28 @@ defmodule Polyglot.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
-  [
-  {:phoenix, "~> 1.7"},
-  {:phoenix_pubsub, "~> 2.1"},
-  {:phoenix_pubsub_redis, "~> 1.1"},
-  {:plug_cowboy, "~> 2.5"},
-  {:jason, "~> 1.2"},
-  {:redix, "~> 1.2"},
-      {:httpoison, "~> 2.0"}
+    [
+      {:phoenix, "~> 1.7"},
+      {:phoenix_pubsub, "~> 2.1"},
+      {:phoenix_pubsub_redis, "~> 1.1"},
+      {:plug_cowboy, "~> 2.5"},
+      {:jason, "~> 1.2"},
+      {:redix, "~> 1.2"},
+      {:httpoison, "~> 2.0"},
+      # Authentication & Security
+      {:joken, "~> 2.6"},
+      {:bcrypt_elixir, "~> 3.1"},
+      # Rate limiting & throttling
+      {:hammer, "~> 6.1"},
+      # Observability
+      {:telemetry, "~> 1.2"},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
+      # Environment & Config
+      {:dotenvy, "~> 0.4.0"},
+      # Error tracking (optional)
+      {:sentry, "~> 10.0"}
     ]
   end
 end

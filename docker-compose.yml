@@ -5,45 +5,128 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
-      - "443:443"  # For HTTPS
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - polyglot
+      polyglot:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - polyglot-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   polyglot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     expose:
       - "4000"
     depends_on:
-      - redis
-      - go-processor
+      redis:
+        condition: service_started
+      go-processor:
+        condition: service_started
     environment:
+      # Load from .env file (copy from .env.example)
       - MIX_ENV=prod
-      - SECRET_KEY_BASE=your-secret-key-base-change-in-production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - APP_PORT=4000
+      - APP_HOST=polyglot
+      - LOG_LEVEL=info
+      - GO_PROCESSOR_URL=http://go-processor:8080
+      - SENTRY_DSN=${SENTRY_DSN:-}
     restart: unless-stopped
+    networks:
+      - polyglot-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    security_opt:
+      - no-new-privileges:true
     # Scale with: docker-compose up --scale polyglot=3
 
   redis:
     image: redis:7-alpine
     expose:
       - "6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
+    networks:
+      - polyglot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   go-processor:
     build:
       context: ./go_processor
+      dockerfile: Dockerfile
     expose:
       - "8080"
+    environment:
+      - LOG_LEVEL=info
     restart: unless-stopped
+    networks:
+      - polyglot-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
     # Scale with: docker-compose up --scale go-processor=2
 
   # Optional: Uncomment when C++ is available
   # cpp-driver:
   #   build:
   #     context: ./cpp_driver
+  #     dockerfile: Dockerfile
   #   expose:
-  #     - "9090"  # Example port
+  #     - "9090"
   #   restart: unless-stopped
+  #   networks:
+  #     - polyglot-network
+  #   security_opt:
+  #     - no-new-privileges:true
+
+volumes:
+  redis_data:
+
+networks:
+  polyglot-network:
+    driver: bridge

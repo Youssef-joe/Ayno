@@ -5,12 +5,24 @@ defmodule Polyglot.Gateway.Endpoint do
     websocket: true,
     longpoll: false
 
+  # Security & Observability Plugs (order matters)
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+  # Security headers
+  plug Polyglot.Plugs.SecurityHeaders
+
+  # Rate limiting (100 requests per 60 seconds per identifier)
+  plug Polyglot.Plugs.RateLimit, limit: 100, window: 60
+
+  # Body parsing
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
+
+  # Request logging
+  plug Plug.Logger, log: :debug
 
   plug Polyglot.Gateway.Router
 end
