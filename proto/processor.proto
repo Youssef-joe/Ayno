@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package polyglot;
+
+option go_package = "polyglot-processor/pb;pb";
+
+// Event message
+message Event {
+  string id = 1;
+  string app_id = 2;
+  string channel = 3;
+  string type = 4;
+  map<string, string> data = 5;
+  map<string, string> meta = 6;
+}
+
+// Process request (single event)
+message ProcessRequest {
+  Event event = 1;
+}
+
+// Process response
+message ProcessResponse {
+  bool processed = 1;
+  int64 duration_ms = 2;
+  string error = 3;
+}
+
+// Batch process request
+message ProcessBatchRequest {
+  repeated Event events = 1;
+}
+
+// Batch process response
+message ProcessBatchResponse {
+  int32 processed = 1;
+  int32 failed = 2;
+  int32 total = 3;
+  int64 duration_ms = 4;
+  repeated string errors = 5;
+}
+
+// Processor service
+service Processor {
+  rpc Process(ProcessRequest) returns (ProcessResponse);
+  rpc ProcessBatch(ProcessBatchRequest) returns (ProcessBatchResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// Health check
+message HealthRequest {}
+message HealthResponse {
+  string status = 1;
+}

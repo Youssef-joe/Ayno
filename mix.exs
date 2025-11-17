@@ -28,6 +28,8 @@ defmodule Polyglot.MixProject do
       {:jason, "~> 1.2"},
       {:redix, "~> 1.2"},
       {:httpoison, "~> 2.0"},
+      # gRPC for high-performance communication
+      {:grpc, "~> 0.7"},
       # Authentication & Security
       {:joken, "~> 2.6"},
       {:bcrypt_elixir, "~> 3.1"},

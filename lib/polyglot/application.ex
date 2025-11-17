@@ -11,6 +11,8 @@ defmodule Polyglot.Application do
       {Redix, {redis_url, [name: :redix]}},
       Polyglot.Storage,
       Polyglot.EventPipeline,
+      {Polyglot.CircuitBreaker, :processor_breaker},
+      Polyglot.HealthCheck,
       Polyglot.Gateway.Endpoint
     ]
 

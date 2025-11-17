@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 type Event struct {
@@ -65,8 +67,19 @@ func (p *Processor) processCpp(event Event) error {
 	return cmd.Run()
 }
 
+func NewGrpcServer() *grpc.Server {
+	return grpc.NewServer()
+}
+
 func main() {
 	processor := &Processor{cppEnabled: true}
+	
+	// Start gRPC server on 9090
+	go func() {
+		if err := StartGRPCServer("9090", processor); err != nil {
+			log.Printf("gRPC server error: %v", err)
+		}
+	}()
 	
 	// Single event processing
 	http.HandleFunc("/process", func(w http.ResponseWriter, r *http.Request) {

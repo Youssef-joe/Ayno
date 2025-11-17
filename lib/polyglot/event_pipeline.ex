@@ -29,30 +29,13 @@ defmodule Polyglot.EventPipeline do
   # Private helpers
 
   defp forward_to_processor(event) do
-    processor_url = System.get_env("GO_PROCESSOR_URL", "http://localhost:8080")
+    case Polyglot.ProcessorClient.process_event(event) do
+      :ok ->
+        Logger.debug("Event processed: #{event.id}")
+        :ok
 
-    try do
-      case HTTPoison.post(
-             "#{processor_url}/process",
-             Jason.encode!(event),
-             [{"Content-Type", "application/json"}],
-             timeout: 5000
-           ) do
-        {:ok, %HTTPoison.Response{status_code: 200}} ->
-          Logger.debug("Event processed: #{event.id}")
-          :ok
-
-        {:ok, response} ->
-          Logger.error("Go processor error: #{response.status_code}")
-          :error
-
-        {:error, reason} ->
-          Logger.error("Failed to reach Go processor: #{inspect(reason)}")
-          :error
-      end
-    rescue
-      e ->
-        Logger.error("Exception forwarding event: #{inspect(e)}")
+      :error ->
+        Logger.error("Failed to process event: #{event.id}")
         :error
     end
   end

@@ -60,6 +60,23 @@ defmodule Polyglot.Gateway.Router do
     }))
   end
 
+  # Readiness check (for orchestration)
+  get "/ready" do
+    status = Polyglot.HealthCheck.health_status()
+    
+    http_status = if status.ready, do: 200, else: 503
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(http_status, Jason.encode!(status))
+  end
+
+  # Liveness check
+  get "/alive" do
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, Jason.encode!(%{status: "alive"}))
+  end
+
   # 404 handler
   match _ do
     Logger.warning("404 - Path not found: #{conn.request_path}")
