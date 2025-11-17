@@ -1,105 +1,45 @@
 defmodule Polyglot.EventPipeline do
   @moduledoc """
-  High-performance event processing pipeline using Broadway.
+  Simple event processing pipeline that forwards events to Go processor.
   
-  Batches events for 10x throughput improvement:
-  - Collects events into batches
-  - Processes in parallel workers
-  - Forwards to Go processor efficiently
-  - Broadcasts to subscribers
-  
-  Without batching: 100 events = 100 HTTP calls to Go processor
-  With batching: 100 events = 10 HTTP calls (10 events per batch)
+  Uses Task.start_link for async processing without blocking.
   """
 
-  use Broadway
-
+  use GenServer
   require Logger
 
-  @batch_size 10
-  @batch_timeout 100  # milliseconds
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
 
-  def start_link(opts) do
-    Broadway.start_link(__MODULE__,
-      name: __MODULE__,
-      producer: [
-        module: {Broadway.DummyProducer, []},
-        transformer: {__MODULE__, :transform, []}
-      ],
-      processors: [
-        default: [
-          concurrency: 10,
-          max_demand: 100
-        ]
-      ],
-      batchers: [
-        go_processor: [
-          concurrency: 5,
-          batch_size: @batch_size,
-          batch_timeout: @batch_timeout
-        ]
-      ]
-    )
+  @impl true
+  def init(_) do
+    {:ok, %{}}
   end
 
   @doc """
-  Push an event into the pipeline.
+  Push an event to be processed (asynchronously).
   """
   def push_event(event) do
-    Broadway.producer_call(__MODULE__, {:event, event})
-  end
-
-  # Broadway callbacks
-
-  def handle_message(_processor, message, _context) do
-    case message.data do
-      {:event, event} ->
-        Message.put_batcher(message, :go_processor)
-
-      _ ->
-        message
-    end
-  end
-
-  def handle_batch(:go_processor, messages, _batch_info, _context) do
-    events = Enum.map(messages, & &1.data |> elem(1))
-    
-    # Send batch to Go processor
-    case forward_batch_to_processor(events) do
-      :ok ->
-        Logger.debug("Processed batch of #{length(events)} events")
-        messages
-
-      :error ->
-        Logger.error("Failed to process batch of #{length(events)} events")
-        messages
-    end
-  end
-
-  def transform(event, _opts) do
-    %Broadway.Message{
-      data: {:event, event},
-      acknowledger: {__MODULE__, :ack, []}
-    }
-  end
-
-  def ack(ack_ref, successful, failed) do
-    Logger.debug("Ack: #{length(successful)} successful, #{length(failed)} failed")
+    Task.start_link(fn ->
+      forward_to_processor(event)
+    end)
   end
 
   # Private helpers
 
-  defp forward_batch_to_processor(events) do
+  defp forward_to_processor(event) do
     processor_url = System.get_env("GO_PROCESSOR_URL", "http://localhost:8080")
-    
+
     try do
       case HTTPoison.post(
-        "#{processor_url}/process-batch",
-        Jason.encode!(%{events: events}),
-        [{"Content-Type", "application/json"}],
-        timeout: 5000
-      ) do
+             "#{processor_url}/process",
+             Jason.encode!(event),
+             [{"Content-Type", "application/json"}],
+             timeout: 5000
+           ) do
         {:ok, %HTTPoison.Response{status_code: 200}} ->
+          Logger.debug("Event processed: #{event.id}")
           :ok
 
         {:ok, response} ->
@@ -112,7 +52,7 @@ defmodule Polyglot.EventPipeline do
       end
     rescue
       e ->
-        Logger.error("Exception forwarding batch: #{inspect(e)}")
+        Logger.error("Exception forwarding event: #{inspect(e)}")
         :error
     end
   end

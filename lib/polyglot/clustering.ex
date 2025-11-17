@@ -1,12 +1,12 @@
 defmodule Polyglot.Clustering do
   @moduledoc """
   Distributed clustering support for Polyglot.
-  
+
   Enables multiple Elixir nodes to work together, sharing:
   - PubSub state (distributed)
   - Event processing (load balanced)
   - Presence tracking
-  
+
   Strategies:
   - Kubernetes: Service discovery via DNS
   - Docker Compose: Static node list
@@ -17,18 +17,18 @@ defmodule Polyglot.Clustering do
 
   def start_link(_) do
     Logger.info("Starting Polyglot clustering...")
-    
+
     topologies = topologies()
-    
-    {:ok, _} = Cluster.Supervisor.start_link([topologies: topologies])
-    
+
+    {:ok, _} = Cluster.Supervisor.start_link(topologies: topologies)
+
     {:ok, self()}
   end
 
   # Get clustering configuration based on environment
   defp topologies do
     strategy = System.get_env("CLUSTER_STRATEGY", "static")
-    
+
     case strategy do
       "kubernetes" -> kubernetes_topology()
       "dns" -> dns_topology()
@@ -81,7 +81,7 @@ defmodule Polyglot.Clustering do
 
   # Static node list (for docker-compose, simple deployments)
   defp static_topology do
-    nodes = 
+    nodes =
       System.get_env("CLUSTER_NODES", "")
       |> String.split(",")
       |> Enum.map(&String.trim/1)
@@ -96,6 +96,7 @@ defmodule Polyglot.Clustering do
 
       _ ->
         Logger.info("Clustering with nodes: #{inspect(nodes)}")
+
         [
           polyglot: [
             strategy: Cluster.Strategy.Epmd,

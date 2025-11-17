@@ -42,10 +42,6 @@ config :logger, level: String.to_atom(System.get_env("LOG_LEVEL", "info"))
 config :joken,
   default_signer: jwt_secret
 
-# Rate limiting configuration
-config :hammer,
-  backend: {:ets, [name: :hammer_backend]}
-
 # Sentry Configuration (error tracking)
 if app_env == :prod do
   config :sentry,

@@ -1,7 +1,7 @@
 # Builder stage
 FROM elixir:1.17-alpine AS builder
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git build-base gcc make
 
 WORKDIR /app
 

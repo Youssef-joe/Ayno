@@ -31,8 +31,6 @@ defmodule Polyglot.MixProject do
       # Authentication & Security
       {:joken, "~> 2.6"},
       {:bcrypt_elixir, "~> 3.1"},
-      # Rate limiting & throttling
-      {:hammer, "~> 6.1"},
       # Observability
       {:telemetry, "~> 1.2"},
       {:telemetry_metrics, "~> 0.6"},

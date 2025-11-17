@@ -12,9 +12,6 @@ defmodule Polyglot.Gateway.Endpoint do
   # Security headers
   plug Polyglot.Plugs.SecurityHeaders
 
-  # Rate limiting (100 requests per 60 seconds per identifier)
-  plug Polyglot.Plugs.RateLimit, limit: 100, window: 60
-
   # Body parsing
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],

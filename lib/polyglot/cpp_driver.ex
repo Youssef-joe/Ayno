@@ -1,13 +1,13 @@
 defmodule Polyglot.CppDriver do
   @moduledoc """
   Ultra-low latency C++ driver for performance-critical operations.
-  
+
   The C++ driver handles:
   - High-speed event parsing
   - Zero-copy message forwarding
   - Native JSON encoding/decoding
   - Lock-free queues
-  
+
   Falls back to Elixir if C++ driver unavailable.
   """
 
@@ -15,7 +15,7 @@ defmodule Polyglot.CppDriver do
 
   @doc """
   Parse event with C++ parser (fallback to Elixir if unavailable).
-  
+
   C++ version: <1μs
   Elixir version: ~10μs
   """
@@ -29,7 +29,7 @@ defmodule Polyglot.CppDriver do
 
   @doc """
   Batch encode multiple events (10x faster than per-event encoding).
-  
+
   C++ version: <10μs per event
   Elixir version: ~10μs per event
   """
@@ -43,7 +43,7 @@ defmodule Polyglot.CppDriver do
 
   @doc """
   Forward event to C++ processor for fast path processing.
-  
+
   C++ version: <5μs
   Network roundtrip: ~2-10ms
   """

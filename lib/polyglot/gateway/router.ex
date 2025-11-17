@@ -13,22 +13,12 @@ defmodule Polyglot.Gateway.Router do
     Logger.info("Publish request - app: #{app_id}, channel: #{channel}")
 
     with {:auth, :ok} <- {:auth, Polyglot.Auth.verify_app_key(conn, app_id)},
-         {:body, {:ok, body, _}} <- {:body, Plug.Conn.read_body(conn, size: 1_000_000)},
-         {:json, {:ok, data}} <- {:json, Jason.decode(body)},
-         {:validate, true} <- {:validate, valid_event?(data)} do
-      handle_publish(conn, app_id, channel, data)
+         {:validate, true} <- {:validate, valid_event?(conn.body_params)} do
+      handle_publish(conn, app_id, channel, conn.body_params)
     else
       {:auth, {:error, _}} ->
         Logger.warning("Unauthorized publish attempt - app: #{app_id}")
         send_error(conn, 401, "Unauthorized")
-
-      {:body, {:error, _}} ->
-        Logger.error("Failed to read request body for app: #{app_id}")
-        send_error(conn, 400, "Failed to read request body")
-
-      {:json, {:error, _}} ->
-        Logger.warning("Invalid JSON in publish request")
-        send_error(conn, 400, "Invalid JSON payload")
 
       {:validate, false} ->
         Logger.warning("Invalid event data - missing required fields")
