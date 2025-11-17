@@ -40,7 +40,13 @@ defmodule Polyglot.MixProject do
       # Environment & Config
       {:dotenvy, "~> 0.4.0"},
       # Error tracking (optional)
-      {:sentry, "~> 10.0"}
+      {:sentry, "~> 10.0"},
+      # Clustering & Distribution
+      {:libcluster, "~> 3.3"},
+      # Fast event batching
+      {:broadway, "~> 1.0"},
+      # Native performance (NIF bindings)
+      {:rustler, "~> 0.32"}
     ]
   end
 end
