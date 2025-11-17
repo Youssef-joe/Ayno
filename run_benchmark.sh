@@ -28,7 +28,7 @@ echo "Running benchmarks..."
 
 # Run Go latency benchmark
 echo "=== Go Processor Latency Test ==="
-cd benchmarks && go run latency_test.go
+cd benchmarks && go run latency_bench.go
 cd ..
 
 # Run C++ benchmark
@@ -36,9 +36,18 @@ echo "=== C++ Ultra-Low Latency Test ==="
 cd benchmarks && g++ -std=c++17 -O3 -o cpp_benchmark cpp_benchmark.cpp && ./cpp_benchmark
 cd ..
 
+# Run C++ cluster benchmark
+echo "=== C++ Cluster Driver Benchmark ==="
+cd benchmarks && g++ -std=c++17 -O3 -o cpp_cluster_benchmark cpp_cluster_benchmark.cpp && ./cpp_cluster_benchmark
+cd ..
+
 # Run Elixir benchmark
 echo "=== Elixir Gateway Benchmark ==="
 mix run benchmarks/benchmark.exs
+
+# Run cluster benchmark
+echo "=== Polyglot Cluster Benchmark ==="
+mix run benchmarks/cluster_benchmark.exs
 
 # Cleanup
 echo "Cleaning up..."
