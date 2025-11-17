@@ -2,6 +2,8 @@
 
 A multi-tenant realtime platform built with Elixir Phoenix, supporting WebSocket and HTTP APIs for chat, trading, gaming, and any realtime application.
 
+[![npm version](https://badge.fury.io/js/polyglot-realtime-client.svg)](https://badge.fury.io/js/polyglot-realtime-client)
+
 ## Architecture
 
 - **Elixir Gateway**: Phoenix WebSocket/HTTP server with multi-tenant channels
@@ -16,6 +18,25 @@ A multi-tenant realtime platform built with Elixir Phoenix, supporting WebSocket
 ```bash
 docker-compose up --build
 ```
+
+This starts:
+- Nginx load balancer on `http://localhost`
+- Elixir server on `localhost:4000` (internal)
+- Go processor on `localhost:8080` (internal)
+- Redis on `localhost:6379` (internal)
+
+### Scaling
+
+Scale services with Docker Compose:
+```bash
+# Scale Elixir servers
+docker-compose up --scale polyglot=3
+
+# Scale Go processors
+docker-compose up --scale go-processor=2
+```
+
+The load balancer automatically distributes traffic.
 
 ### Manual Setup
 
@@ -78,6 +99,13 @@ curl -X POST /apps/{app_id}/channels/{channel}/publish \
 # History
 curl /apps/{app_id}/channels/{channel}/history
 ```
+
+## Client SDKs
+
+- **JavaScript/TypeScript**: [polyglot-realtime-client on npm](https://www.npmjs.com/package/polyglot-realtime-client)
+  ```bash
+  npm install polyglot-realtime-client ws
+  ```
 
 ## Examples
 
