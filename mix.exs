@@ -23,16 +23,16 @@ defmodule Polyglot.MixProject do
     [
       {:phoenix, "~> 1.7"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:phoenix_pubsub_redis, "~> 1.1"},
+      {:phoenix_pubsub_redis, "~> 3.0"},
       {:plug_cowboy, "~> 2.5"},
       {:jason, "~> 1.2"},
       {:redix, "~> 1.2"},
       {:httpoison, "~> 2.0"},
+      # gRPC for high-performance communication
+      {:grpc, "~> 0.7"},
       # Authentication & Security
       {:joken, "~> 2.6"},
       {:bcrypt_elixir, "~> 3.1"},
-      # Rate limiting & throttling
-      {:hammer, "~> 6.1"},
       # Observability
       {:telemetry, "~> 1.2"},
       {:telemetry_metrics, "~> 0.6"},
@@ -40,7 +40,13 @@ defmodule Polyglot.MixProject do
       # Environment & Config
       {:dotenvy, "~> 0.4.0"},
       # Error tracking (optional)
-      {:sentry, "~> 10.0"}
+      {:sentry, "~> 10.0"},
+      # Clustering & Distribution
+      {:libcluster, "~> 3.3"},
+      # Fast event batching
+      {:broadway, "~> 1.0"},
+      # Native performance (NIF bindings)
+      {:rustler, "~> 0.32"}
     ]
   end
 end

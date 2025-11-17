@@ -13,22 +13,12 @@ defmodule Polyglot.Gateway.Router do
     Logger.info("Publish request - app: #{app_id}, channel: #{channel}")
 
     with {:auth, :ok} <- {:auth, Polyglot.Auth.verify_app_key(conn, app_id)},
-         {:body, {:ok, body, _}} <- {:body, Plug.Conn.read_body(conn, size: 1_000_000)},
-         {:json, {:ok, data}} <- {:json, Jason.decode(body)},
-         {:validate, true} <- {:validate, valid_event?(data)} do
-      handle_publish(conn, app_id, channel, data)
+         {:validate, true} <- {:validate, valid_event?(conn.body_params)} do
+      handle_publish(conn, app_id, channel, conn.body_params)
     else
       {:auth, {:error, _}} ->
         Logger.warning("Unauthorized publish attempt - app: #{app_id}")
         send_error(conn, 401, "Unauthorized")
-
-      {:body, {:error, _}} ->
-        Logger.error("Failed to read request body for app: #{app_id}")
-        send_error(conn, 400, "Failed to read request body")
-
-      {:json, {:error, _}} ->
-        Logger.warning("Invalid JSON in publish request")
-        send_error(conn, 400, "Invalid JSON payload")
 
       {:validate, false} ->
         Logger.warning("Invalid event data - missing required fields")
@@ -68,6 +58,23 @@ defmodule Polyglot.Gateway.Router do
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
       version: Application.spec(:polyglot, :vsn) |> to_string()
     }))
+  end
+
+  # Readiness check (for orchestration)
+  get "/ready" do
+    status = Polyglot.HealthCheck.health_status()
+    
+    http_status = if status.ready, do: 200, else: 503
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(http_status, Jason.encode!(status))
+  end
+
+  # Liveness check
+  get "/alive" do
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, Jason.encode!(%{status: "alive"}))
   end
 
   # 404 handler

@@ -1,13 +1,15 @@
 import Config
 
 # Load environment variables
-Dotenvy.source!(["#{config_env()}.env", ".env"])
+if Code.ensure_loaded?(Dotenvy) do
+  Dotenvy.source!(["#{config_env()}.env", ".env"])
+end
 
 # Get required secrets
-secret_key_base = System.fetch_env!("SECRET_KEY_BASE")
+secret_key_base = System.get_env("SECRET_KEY_BASE") || (config_env() == :prod && raise "SECRET_KEY_BASE not set") || "dev-secret-key"
 redis_host = System.get_env("REDIS_HOST", "localhost")
 redis_port = System.get_env("REDIS_PORT", "6379") |> String.to_integer()
-jwt_secret = System.fetch_env!("JWT_SECRET")
+jwt_secret = System.get_env("JWT_SECRET") || (config_env() == :prod && raise "JWT_SECRET not set") || "dev-jwt-secret"
 app_port = System.get_env("APP_PORT", "4000") |> String.to_integer()
 app_env = config_env()
 
@@ -39,10 +41,6 @@ config :logger, level: String.to_atom(System.get_env("LOG_LEVEL", "info"))
 # JWT Configuration
 config :joken,
   default_signer: jwt_secret
-
-# Rate limiting configuration
-config :hammer,
-  backend: {:ets, [name: :hammer_backend]}
 
 # Sentry Configuration (error tracking)
 if app_env == :prod do

@@ -21,7 +21,9 @@ defmodule Polyglot.Storage do
         |> Enum.take(limit)
         |> Enum.map(fn {_channel, event} -> event end)
         |> Enum.reverse()
-      _ -> []
+
+      _ ->
+        []
     end
   end
 end
