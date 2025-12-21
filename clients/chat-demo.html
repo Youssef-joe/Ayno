@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot Chat Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .status.polling {
+            background: #4caf50;
+        }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        .message.other {
+            background: #f0f0f0;
+            align-self: flex-start;
+            max-width: 80%;
+        }
+        .message.mine {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+            max-width: 80%;
+        }
+        .message-text {
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .input-area {
+            padding: 16px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Polyglot Chat</h1>
+            <p>Real-time messaging demo</p>
+            <div class="status polling" id="status">Polling...</div>
+        </div>
+        
+        <div class="messages" id="messages">
+            <div class="empty">No messages yet. Start chatting!</div>
+        </div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="input" 
+                placeholder="Type a message..."
+                autocomplete="off"
+            >
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            baseUrl: 'http://localhost:4000',
+            appId: 'demo-app',
+            channel: 'room:chat',
+            apiKey: 'valid_key_demo-app'
+        };
+
+        let lastEventId = 0;
+        let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let pollingInterval = null;
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.baseUrl}/apps/${CONFIG.appId}/channels/${CONFIG.channel}/publish`,
+                    {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': CONFIG.apiKey
+                        },
+                        body: JSON.stringify({
+                            type: 'message',
+                            data: { text }
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    input.value = '';
+                    // Fetch immediately to show message
+                    await fetchMessages();
+                }
+            } catch (e) {
+                console.error('Send error:', e);
+            }
+        }
+
+        // Poll for messages
+        async function fetchMessages() {
+            try {
+                const response = await fetch(
+                    `${CONFIG.baseUrl}/apps/${CONFIG.appId}/channels/${CONFIG.channel}/history`,
+                    { mode: 'no-cors' }
+                );
+                const data = await response.json();
+                
+                if (data && data.events) {
+                    const messagesDiv = document.getElementById('messages');
+                    
+                    // Show only new messages
+                    const newEvents = data.events.filter(e => parseInt(e.id.replace('evt_', '')) > lastEventId);
+                    
+                    if (newEvents.length > 0) {
+                        if (messagesDiv.querySelector('.empty')) {
+                            messagesDiv.innerHTML = '';
+                        }
+                        
+                        newEvents.reverse().forEach(event => {
+                            const id = parseInt(event.id.replace('evt_', ''));
+                            if (id > lastEventId) {
+                                lastEventId = id;
+                            }
+                            
+                            const div = document.createElement('div');
+                            const isMine = event.meta.user_id === userId;
+                            div.className = 'message ' + (isMine ? 'mine' : 'other');
+                            
+                            const time = new Date(event.meta.ts).toLocaleTimeString();
+                            div.innerHTML = `
+                                <div class="message-text">${escapeHtml(event.data.text)}</div>
+                                <div class="message-time">${time}</div>
+                            `;
+                            
+                            messagesDiv.appendChild(div);
+                        });
+                        
+                        // Scroll to bottom
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                }
+            } catch (e) {
+                console.error('Fetch error:', e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Enter key to send
+        document.getElementById('input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Start polling
+        function startPolling() {
+            fetchMessages();
+            pollingInterval = setInterval(fetchMessages, 1000); // Poll every second
+        }
+
+        // Stop polling
+        function stopPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+        }
+
+        // Lifecycle
+        window.addEventListener('focus', startPolling);
+        window.addEventListener('blur', stopPolling);
+
+        startPolling();
+        console.log('Chat demo started. User:', userId);
+    </script>
+</body>
+</html>

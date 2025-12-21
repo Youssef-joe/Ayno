@@ -21,5 +21,8 @@ defmodule Polyglot.Gateway.Endpoint do
   # Request logging
   plug Plug.Logger, log: :debug
 
+  # CORS support
+  plug Polyglot.Plugs.CORS
+
   plug Polyglot.Gateway.Router
 end

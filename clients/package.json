@@ -1,0 +1,27 @@
+{
+  "name": "polyglot-test-client",
+  "version": "1.0.0",
+  "description": "Test client for Polyglot realtime engine",
+  "main": "test-client.js",
+  "scripts": {
+    "test": "node test-client.js full",
+    "health": "node test-client.js health",
+    "publish": "node test-client.js publish",
+    "history": "node test-client.js history",
+    "ws": "node test-client.js ws",
+    "stress": "node test-client.js stress 100 10",
+    "stress-high": "node test-client.js stress 1000 50"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "polyglot",
+    "realtime",
+    "test",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT"
+}
