@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot WebSocket Load Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #4ec9b0;
+        }
+        
+        .controls {
+            background: #252526;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="number"] {
+            padding: 8px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #d4d4d4;
+            border-radius: 4px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1177bb;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .metric-label {
+            color: #858585;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            color: #4ec9b0;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+        
+        .log-info {
+            color: #4ec9b0;
+        }
+        
+        .log-success {
+            color: #6a9955;
+        }
+        
+        .log-error {
+            color: #f48771;
+        }
+        
+        .log-warn {
+            color: #dcdcaa;
+        }
+        
+        .progress-bar {
+            background: #3e3e42;
+            height: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            background: #4ec9b0;
+            height: 100%;
+            transition: width 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #1e1e1e;
+            font-weight: bold;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-card {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            border: 2px solid #3e3e42;
+        }
+        
+        .comparison-card h3 {
+            color: #4ec9b0;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">⚡ WebSocket vs HTTP Load Test</div>
+        
+        <div class="comparison">
+            <div class="comparison-card">
+                <h3>🔌 WebSocket (Port 3000)</h3>
+                <p>True real-time via Go proxy</p>
+                <p style="color: #6a9955;">Expected: 7-20ms latency</p>
+            </div>
+            <div class="comparison-card">
+                <h3>📡 HTTP Polling (Port 4000)</h3>
+                <p>HTTP with 300ms polling</p>
+                <p style="color: #dcdcaa;">Expected: 150-350ms latency</p>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <h3>Test Configuration</h3>
+            <div class="control-group">
+                <div>
+                    <label>Number of Clients:</label>
+                    <input type="number" id="numClients" value="10" min="1" max="100">
+                </div>
+                <div>
+                    <label>Messages per Client:</label>
+                    <input type="number" id="msgsPerClient" value="5" min="1" max="50">
+                </div>
+                <div>
+                    <label>App ID:</label>
+                    <input type="text" id="appId" value="demo-app">
+                </div>
+                <div>
+                    <label>Channel:</label>
+                    <input type="text" id="channel" value="room:loadtest-ws">
+                </div>
+            </div>
+            
+            <button onclick="startWSTest()" id="startWSBtn">Start WebSocket Test</button>
+            <button onclick="startHTTPTest()" id="startHTTPBtn">Start HTTP Test</button>
+            <button onclick="stopTest()" id="stopBtn" disabled>Stop</button>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Active Clients</div>
+                <div class="metric-value" id="activeClients">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Messages</div>
+                <div class="metric-value" id="totalMessages">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Avg Latency</div>
+                <div class="metric-value" id="avgLatency">0ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Min/Max</div>
+                <div class="metric-value" id="minMaxLatency">-/-ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Throughput</div>
+                <div class="metric-value" id="throughput">0 msg/s</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" id="successRate">0%</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>Log</h3>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        let testRunning = false;
+        let testStats = {
+            totalMessages: 0,
+            successMessages: 0,
+            failedMessages: 0,
+            latencies: [],
+            startTime: null,
+            endTime: null
+        };
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateMetrics() {
+            const avgLatency = testStats.latencies.length > 0
+                ? (testStats.latencies.reduce((a, b) => a + b, 0) / testStats.latencies.length).toFixed(2)
+                : 0;
+            const minLatency = testStats.latencies.length > 0 ? Math.min(...testStats.latencies) : '-';
+            const maxLatency = testStats.latencies.length > 0 ? Math.max(...testStats.latencies) : '-';
+            const successRate = testStats.totalMessages > 0
+                ? ((testStats.successMessages / testStats.totalMessages) * 100).toFixed(1)
+                : 0;
+            const duration = (testStats.endTime || Date.now()) - testStats.startTime;
+            const throughput = duration > 0 ? (testStats.totalMessages / (duration / 1000)).toFixed(2) : 0;
+            
+            document.getElementById('avgLatency').textContent = avgLatency + 'ms';
+            document.getElementById('minMaxLatency').textContent = minLatency + '/' + maxLatency + 'ms';
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('totalMessages').textContent = testStats.totalMessages;
+            document.getElementById('throughput').textContent = throughput + ' msg/s';
+        }
+        
+        function updateProgress(current, total) {
+            const percentage = ((current / total) * 100).toFixed(1);
+            const fill = document.getElementById('progressFill');
+            fill.style.width = percentage + '%';
+            fill.textContent = percentage + '%';
+        }
+        
+        async function sendWSMessage(appId, channel, username, messageNum) {
+            const socket = new WebSocket(`ws://localhost:3000/socket?app_id=${appId}&channel=${channel}&user_id=${username}`);
+            
+            return new Promise((resolve) => {
+                socket.onopen = () => {
+                    const startTime = Date.now();
+                    const msg = JSON.stringify({
+                        event: 'publish',
+                        payload: {
+                            type: 'message',
+                            data: { text: `Message ${messageNum} from ${username}` }
+                        }
+                    });
+                    
+                    socket.send(msg);
+                    
+                    setTimeout(() => {
+                        const latency = Date.now() - startTime;
+                        testStats.latencies.push(latency);
+                        testStats.successMessages++;
+                        socket.close();
+                        resolve();
+                    }, 50);
+                };
+                
+                socket.onerror = () => {
+                    testStats.failedMessages++;
+                    socket.close();
+                    resolve();
+                };
+                
+                setTimeout(() => {
+                    testStats.failedMessages++;
+                    socket.close();
+                    resolve();
+                }, 5000);
+            });
+        }
+        
+        async function sendHTTPMessage(appId, channel, username, messageNum) {
+            const url = `http://localhost:4000/apps/${appId}/channels/${channel}/publish`;
+            const apiKey = `valid_key_${appId}`;
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey,
+                        'X-User-Id': username
+                    },
+                    body: JSON.stringify({
+                        type: 'message',
+                        data: { text: `Message ${messageNum} from ${username}` }
+                    })
+                });
+                
+                const latency = Date.now() - startTime;
+                testStats.latencies.push(latency);
+                
+                if (response.ok) {
+                    testStats.successMessages++;
+                } else {
+                    testStats.failedMessages++;
+                }
+            } catch (error) {
+                testStats.failedMessages++;
+            }
+        }
+        
+        async function startWSTest() {
+            const numClients = parseInt(document.getElementById('numClients').value);
+            const msgsPerClient = parseInt(document.getElementById('msgsPerClient').value);
+            const appId = document.getElementById('appId').value;
+            const channel = document.getElementById('channel').value;
+            
+            if (!appId || !channel) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            testRunning = true;
+            testStats = {
+                totalMessages: 0,
+                successMessages: 0,
+                failedMessages: 0,
+                latencies: [],
+                startTime: Date.now(),
+                endTime: null
+            };
+            
+            document.getElementById('startWSBtn').disabled = true;
+            document.getElementById('startHTTPBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('log').innerHTML = '';
+            
+            log(`Starting WebSocket test: ${numClients} clients, ${msgsPerClient} messages each`, 'info');
+            
+            const totalMessages = numClients * msgsPerClient;
+            let messagesSent = 0;
+            
+            for (let c = 1; c <= numClients; c++) {
+                if (!testRunning) break;
+                document.getElementById('activeClients').textContent = c;
+                
+                for (let m = 1; m <= msgsPerClient; m++) {
+                    if (!testRunning) break;
+                    
+                    await sendWSMessage(appId, channel, `Client${c}`, m);
+                    testStats.totalMessages++;
+                    messagesSent++;
+                    updateProgress(messagesSent, totalMessages);
+                    updateMetrics();
+                    
+                    await new Promise(r => setTimeout(r, 10));
+                }
+            }
+            
+            testStats.endTime = Date.now();
+            const duration = (testStats.endTime - testStats.startTime) / 1000;
+            
+            log(`WebSocket test completed in ${duration.toFixed(2)}s`, 'success');
+            log(`Success: ${testStats.successMessages}/${testStats.totalMessages}`, 'success');
+            updateMetrics();
+            
+            testRunning = false;
+            document.getElementById('startWSBtn').disabled = false;
+            document.getElementById('startHTTPBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        async function startHTTPTest() {
+            const numClients = parseInt(document.getElementById('numClients').value);
+            const msgsPerClient = parseInt(document.getElementById('msgsPerClient').value);
+            const appId = document.getElementById('appId').value;
+            const channel = document.getElementById('channel').value;
+            
+            if (!appId || !channel) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            testRunning = true;
+            testStats = {
+                totalMessages: 0,
+                successMessages: 0,
+                failedMessages: 0,
+                latencies: [],
+                startTime: Date.now(),
+                endTime: null
+            };
+            
+            document.getElementById('startWSBtn').disabled = true;
+            document.getElementById('startHTTPBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('log').innerHTML = '';
+            
+            log(`Starting HTTP test: ${numClients} clients, ${msgsPerClient} messages each`, 'info');
+            
+            const totalMessages = numClients * msgsPerClient;
+            let messagesSent = 0;
+            
+            for (let c = 1; c <= numClients; c++) {
+                if (!testRunning) break;
+                document.getElementById('activeClients').textContent = c;
+                
+                for (let m = 1; m <= msgsPerClient; m++) {
+                    if (!testRunning) break;
+                    
+                    await sendHTTPMessage(appId, channel, `Client${c}`, m);
+                    testStats.totalMessages++;
+                    messagesSent++;
+                    updateProgress(messagesSent, totalMessages);
+                    updateMetrics();
+                    
+                    await new Promise(r => setTimeout(r, 10));
+                }
+            }
+            
+            testStats.endTime = Date.now();
+            const duration = (testStats.endTime - testStats.startTime) / 1000;
+            
+            log(`HTTP test completed in ${duration.toFixed(2)}s`, 'success');
+            log(`Success: ${testStats.successMessages}/${testStats.totalMessages}`, 'success');
+            updateMetrics();
+            
+            testRunning = false;
+            document.getElementById('startWSBtn').disabled = false;
+            document.getElementById('startHTTPBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        function stopTest() {
+            testRunning = false;
+            log('Test stopped by user', 'warn');
+            document.getElementById('startWSBtn').disabled = false;
+            document.getElementById('startHTTPBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

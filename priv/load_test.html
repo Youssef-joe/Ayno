@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot Load Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #4ec9b0;
+        }
+        
+        .controls {
+            background: #252526;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="number"] {
+            padding: 8px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #d4d4d4;
+            border-radius: 4px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1177bb;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .metric-label {
+            color: #858585;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            color: #4ec9b0;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+        
+        .log-info {
+            color: #4ec9b0;
+        }
+        
+        .log-success {
+            color: #6a9955;
+        }
+        
+        .log-error {
+            color: #f48771;
+        }
+        
+        .log-warn {
+            color: #dcdcaa;
+        }
+        
+        .progress-bar {
+            background: #3e3e42;
+            height: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            background: #4ec9b0;
+            height: 100%;
+            transition: width 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #1e1e1e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">⚡ Polyglot Realtime Load Test</div>
+        
+        <div class="controls">
+            <h3>Test Configuration</h3>
+            <div class="control-group">
+                <div>
+                    <label>Number of Users:</label>
+                    <input type="number" id="numUsers" value="10" min="1" max="100">
+                </div>
+                <div>
+                    <label>Messages per User:</label>
+                    <input type="number" id="msgsPerUser" value="5" min="1" max="100">
+                </div>
+                <div>
+                    <label>App ID:</label>
+                    <input type="text" id="appId" value="demo-app">
+                </div>
+                <div>
+                    <label>Channel:</label>
+                    <input type="text" id="channel" value="room:loadtest">
+                </div>
+                <div>
+                    <label>API Key:</label>
+                    <input type="text" id="apiKey" value="valid_key_demo-app">
+                </div>
+            </div>
+            
+            <button onclick="startTest()" id="startBtn">Start Test</button>
+            <button onclick="stopTest()" id="stopBtn" disabled>Stop Test</button>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Active Users</div>
+                <div class="metric-value" id="activeUsers">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Messages</div>
+                <div class="metric-value" id="totalMessages">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Avg Latency</div>
+                <div class="metric-value" id="avgLatency">0ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Min Latency</div>
+                <div class="metric-value" id="minLatency">-ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Max Latency</div>
+                <div class="metric-value" id="maxLatency">-ms</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" id="successRate">0%</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>Log</h3>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        let testRunning = false;
+        let testStats = {
+            totalMessages: 0,
+            successMessages: 0,
+            failedMessages: 0,
+            latencies: [],
+            startTime: null,
+            endTime: null
+        };
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateMetrics() {
+            const avgLatency = testStats.latencies.length > 0
+                ? (testStats.latencies.reduce((a, b) => a + b, 0) / testStats.latencies.length).toFixed(2)
+                : 0;
+            const minLatency = testStats.latencies.length > 0 ? Math.min(...testStats.latencies) : '-';
+            const maxLatency = testStats.latencies.length > 0 ? Math.max(...testStats.latencies) : '-';
+            const successRate = testStats.totalMessages > 0
+                ? ((testStats.successMessages / testStats.totalMessages) * 100).toFixed(1)
+                : 0;
+            
+            document.getElementById('avgLatency').textContent = avgLatency + 'ms';
+            document.getElementById('minLatency').textContent = minLatency + 'ms';
+            document.getElementById('maxLatency').textContent = maxLatency + 'ms';
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('totalMessages').textContent = testStats.totalMessages;
+        }
+        
+        function updateProgress(current, total) {
+            const percentage = ((current / total) * 100).toFixed(1);
+            const fill = document.getElementById('progressFill');
+            fill.style.width = percentage + '%';
+            fill.textContent = percentage + '%';
+        }
+        
+        async function publishMessage(appId, channel, apiKey, username, messageNum) {
+            const url = `http://localhost:4000/apps/${appId}/channels/${channel}/publish`;
+            const text = `Message ${messageNum} from ${username}`;
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey,
+                        'X-User-Id': username
+                    },
+                    body: JSON.stringify({
+                        type: 'message',
+                        data: { text }
+                    })
+                });
+                
+                const latency = Date.now() - startTime;
+                testStats.latencies.push(latency);
+                
+                if (response.ok) {
+                    testStats.successMessages++;
+                    log(`${username}: Message ${messageNum} sent (${latency}ms)`, 'success');
+                } else {
+                    testStats.failedMessages++;
+                    log(`${username}: Message ${messageNum} failed (${response.status})`, 'error');
+                }
+            } catch (error) {
+                testStats.failedMessages++;
+                log(`${username}: Message ${messageNum} error - ${error.message}`, 'error');
+            }
+            
+            testStats.totalMessages++;
+            updateMetrics();
+        }
+        
+        async function startTest() {
+            const numUsers = parseInt(document.getElementById('numUsers').value);
+            const msgsPerUser = parseInt(document.getElementById('msgsPerUser').value);
+            const appId = document.getElementById('appId').value;
+            const channel = document.getElementById('channel').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!appId || !channel || !apiKey) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            testRunning = true;
+            testStats = {
+                totalMessages: 0,
+                successMessages: 0,
+                failedMessages: 0,
+                latencies: [],
+                startTime: Date.now(),
+                endTime: null
+            };
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('log').innerHTML = '';
+            
+            log(`Starting load test: ${numUsers} users, ${msgsPerUser} messages each`, 'info');
+            log(`Channel: ${channel}, App: ${appId}`, 'info');
+            
+            const totalMessages = numUsers * msgsPerUser;
+            let messagesSent = 0;
+            
+            // Create all users and send messages concurrently
+            const promises = [];
+            for (let u = 1; u <= numUsers; u++) {
+                if (!testRunning) break;
+                
+                const username = `LoadUser${u}`;
+                document.getElementById('activeUsers').textContent = u;
+                
+                for (let m = 1; m <= msgsPerUser; m++) {
+                    if (!testRunning) break;
+                    
+                    promises.push(
+                        publishMessage(appId, channel, apiKey, username, m)
+                        .then(() => {
+                            messagesSent++;
+                            updateProgress(messagesSent, totalMessages);
+                        })
+                    );
+                    
+                    // Small delay to avoid overwhelming
+                    await new Promise(r => setTimeout(r, 10));
+                }
+            }
+            
+            await Promise.all(promises);
+            
+            if (testRunning) {
+                testStats.endTime = Date.now();
+                const duration = (testStats.endTime - testStats.startTime) / 1000;
+                const msgPerSec = (testStats.totalMessages / duration).toFixed(2);
+                
+                log(`Test completed in ${duration.toFixed(2)}s`, 'success');
+                log(`Throughput: ${msgPerSec} msg/sec`, 'success');
+                log(`Success: ${testStats.successMessages}/${testStats.totalMessages}`, 'success');
+                
+                testRunning = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            }
+        }
+        
+        function stopTest() {
+            testRunning = false;
+            log('Test stopped by user', 'warn');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

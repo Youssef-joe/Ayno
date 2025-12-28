@@ -32,7 +32,7 @@ defmodule Polyglot.MixProject do
       {:grpc, "~> 0.7"},
       # Authentication & Security
       {:joken, "~> 2.6"},
-      {:bcrypt_elixir, "~> 3.1"},
+      # {:bcrypt_elixir, "~> 3.1"},  # Temporarily disabled - requires C++ build tools
       # Observability
       {:telemetry, "~> 1.2"},
       {:telemetry_metrics, "~> 0.6"},
@@ -44,9 +44,9 @@ defmodule Polyglot.MixProject do
       # Clustering & Distribution
       {:libcluster, "~> 3.3"},
       # Fast event batching
-      {:broadway, "~> 1.0"},
+      {:broadway, "~> 1.0"}
       # Native performance (NIF bindings)
-      {:rustler, "~> 0.32"}
+      # {:rustler, "~> 0.32"}  # Temporarily disabled - requires nmake
     ]
   end
 end

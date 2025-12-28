@@ -2,8 +2,29 @@ defmodule Polyglot.Gateway.Router do
   use Plug.Router
   require Logger
 
+  # Parse request body before matching
+  plug :parse_body
   plug :match
   plug :dispatch
+
+  defp parse_body(conn, _opts) do
+    case Plug.Conn.get_req_header(conn, "content-type") do
+      ["application/json" <> _] ->
+        case Plug.Conn.read_body(conn) do
+          {:ok, body, conn} ->
+            case Jason.decode(body) do
+              {:ok, params} ->
+                %{conn | body_params: params}
+              {:error, _} ->
+                conn
+            end
+          {:error, _} ->
+            conn
+        end
+      _ ->
+        conn
+    end
+  end
 
   @processor_url System.get_env("GO_PROCESSOR_URL", "http://localhost:8080")
   @processor_timeout 5000
@@ -47,6 +68,65 @@ defmodule Polyglot.Gateway.Router do
       count: length(events),
       events: events
     }))
+  end
+
+  # Serve static test file
+  get "/test" do
+    file_path = Path.join([File.cwd!(), "priv", "test_realtime.html"])
+    case File.read(file_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type("text/html")
+        |> send_resp(200, content)
+      {:error, _} ->
+        Logger.warning("Test file not found: #{file_path}")
+        send_error(conn, 404, "Test file not found")
+    end
+  end
+
+  # Serve load test file (HTTP)
+  get "/loadtest" do
+    file_path = Path.join([File.cwd!(), "priv", "load_test.html"])
+    case File.read(file_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type("text/html")
+        |> send_resp(200, content)
+      {:error, _} ->
+        Logger.warning("Load test file not found: #{file_path}")
+        send_error(conn, 404, "Load test file not found")
+    end
+  end
+
+  # Serve WebSocket load test file
+  get "/loadtest-ws" do
+    file_path = Path.join([File.cwd!(), "priv", "loadtest_ws.html"])
+    case File.read(file_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type("text/html")
+        |> send_resp(200, content)
+      {:error, _} ->
+        Logger.warning("WebSocket load test file not found: #{file_path}")
+        send_error(conn, 404, "WebSocket load test file not found")
+    end
+  end
+
+  # Proxy processor health check (to avoid CORS issues)
+  get "/processor-health" do
+    case HTTPoison.get("#{@processor_url}/health", [], timeout: 2000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(200, body)
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(status, body)
+      {:error, reason} ->
+        Logger.error("Failed to reach processor: #{inspect(reason)}")
+        send_error(conn, 503, "Processor unavailable")
+    end
   end
 
   # Health check

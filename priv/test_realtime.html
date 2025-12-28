@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot Realtime Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .status {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status.connected .status-dot {
+            background: #2e7d32;
+            animation: pulse 2s infinite;
+        }
+        
+        .status.disconnected .status-dot {
+            background: #c62828;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group input,
+        .input-group select {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .input-group button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        .input-group button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .input-group button:active {
+            transform: translateY(0);
+        }
+        
+        .event-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f5f5f5;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        
+        .event-time {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .event-type {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .event-data {
+            color: #333;
+        }
+        
+        .messages-container {
+            display: flex;
+            flex-direction: column;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        
+        .message {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+        
+        .message:last-child {
+            border-bottom: none;
+        }
+        
+        .message.own {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .message.other {
+            background: #fff;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #999;
+            display: block;
+            margin-top: 4px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .button-group button:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="usersContainer" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <!-- Dynamic user panels will be inserted here -->
+    </div>
+    
+    <div style="max-width: 1200px; margin: 20px auto;">
+        <div class="panel">
+            <div class="header">⚡ WebSocket Test (Real-time, No Polling)</div>
+            <div class="content">
+                <div class="input-group">
+                    <input type="text" id="wsAppId" placeholder="App ID" value="demo-app">
+                    <input type="text" id="wsChannel" placeholder="Channel" value="room:ws-test">
+                </div>
+                <div class="input-group">
+                    <button onclick="connectWS()">Connect WebSocket</button>
+                    <button onclick="disconnectWS()" id="wsDisconnectBtn" disabled>Disconnect</button>
+                </div>
+                <div id="wsStatus" class="status disconnected" style="margin-bottom: 10px;">
+                    <span class="status-dot"></span>
+                    <span id="wsStatusText">Disconnected</span>
+                </div>
+                <div class="messages-container" id="wsMessages" style="height: 200px; margin-bottom: 10px;"></div>
+                <div class="input-group">
+                    <input type="text" id="wsMessageInput" placeholder="Type message..." onkeypress="handleWSKeypress(event)">
+                    <button onclick="sendWSMessage()">Send</button>
+                </div>
+                <div style="font-size: 12px; color: #999; margin-top: 10px;">
+                    WebSocket messages appear instantly (no 500ms polling delay). Open browser console to see latency.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="max-width: 1200px; margin: 20px auto;">
+        <div class="panel">
+            <div class="header">Add New User (HTTP Polling)</div>
+            <div class="content">
+                <div class="input-group">
+                    <input type="text" id="newUsername" placeholder="Username" value="User1">
+                    <input type="text" id="newAppId" placeholder="App ID" value="demo-app">
+                    <input type="text" id="newChannel" placeholder="Channel" value="room:test">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="newApiKey" placeholder="API Key" value="valid_key_demo-app">
+                    <button onclick="addUser()">Add User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+        
+        <!-- HTTP API Panel -->
+        <div class="panel">
+            <div class="header">HTTP API Testing</div>
+            <div class="content">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('publish')">Publish</button>
+                    <button class="tab" onclick="switchTab('history')">History</button>
+                    <button class="tab" onclick="switchTab('health')">Health</button>
+                </div>
+                
+                <!-- Publish Tab -->
+                <div id="publish" class="tab-content active">
+                    <div class="input-group">
+                        <input type="text" id="appId" placeholder="App ID" value="demo-app">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="channel" placeholder="Channel" value="room:test">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="apiKey" placeholder="API Key" value="valid_key_demo-app">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="messageText" placeholder="Message text" value="Hello from HTTP API">
+                    </div>
+                    <button style="width: 100%; padding: 10px; margin-bottom: 15px;" onclick="publishEvent()">Publish Event</button>
+                    <div class="messages-container" id="publishResponse" style="height: 150px;"></div>
+                </div>
+                
+                <!-- History Tab -->
+                <div id="history" class="tab-content">
+                    <div class="input-group">
+                        <input type="text" id="historyAppId" placeholder="App ID" value="demo-app">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="historyChannel" placeholder="Channel" value="room:test">
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="historyLimit" placeholder="Limit" value="50" min="1" max="1000">
+                    </div>
+                    <button style="width: 100%; padding: 10px; margin-bottom: 15px;" onclick="getHistory()">Get History</button>
+                    <div class="messages-container" id="historyResponse" style="height: 150px;"></div>
+                </div>
+                
+                <!-- Health Tab -->
+                <div id="health" class="tab-content">
+                    <button style="width: 100%; padding: 10px; margin-bottom: 15px;" onclick="checkHealth()">Check Elixir Health</button>
+                    <button style="width: 100%; padding: 10px; margin-bottom: 15px;" onclick="checkProcessorHealth()">Check Processor Health (via proxy)</button>
+                    <div class="messages-container" id="healthResponse" style="height: 200px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let users = {};  // { userId: { username, appId, channel, apiKey, pollingInterval, messageCount, lastEventId, status } }
+        let nextUserId = 1;
+        let sharedLastEventId = null;  // Shared event tracking across all users in same channel
+        
+        let wsSocket = null;
+        let wsRef = 1;
+        let wsConnected = false;
+        let wsStartTime = null;
+        
+        // Generate a dev JWT token
+        function generateDevToken(userId, appId) {
+            const claims = {
+                sub: userId,
+                app_id: appId,
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                iat: Math.floor(Date.now() / 1000)
+            };
+            
+            const encoded = btoa(JSON.stringify(claims));
+            return `dev.${encoded}.sig`;
+        }
+        
+        // Add a new user
+        function addUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const appId = document.getElementById('newAppId').value.trim();
+            const channel = document.getElementById('newChannel').value.trim();
+            const apiKey = document.getElementById('newApiKey').value.trim();
+            
+            if (!username || !appId || !channel || !apiKey) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const userId = `user_${nextUserId++}`;
+            users[userId] = {
+                username,
+                appId,
+                channel,
+                apiKey,
+                pollingInterval: null,
+                messageCount: 0,
+                lastEventId: null,
+                status: 'connected'
+            };
+            
+            renderUserPanel(userId);
+            startPollingForUser(userId);
+            
+            // Clear inputs
+            document.getElementById('newUsername').value = 'User' + nextUserId;
+            document.getElementById('newChannel').value = channel;  // Keep same channel for next user
+        }
+        
+        // Render a user's chat panel
+        function renderUserPanel(userId) {
+            const user = users[userId];
+            const container = document.getElementById('usersContainer');
+            
+            const panel = document.createElement('div');
+            panel.className = 'panel';
+            panel.id = `panel_${userId}`;
+            panel.innerHTML = `
+                <div class="header">${user.username}</div>
+                <div class="content">
+                    <div id="status_${userId}" class="status connected">
+                        <span class="status-dot"></span>
+                        <span>Connected</span>
+                    </div>
+                    
+                    <div class="messages-container" id="messages_${userId}" style="height: 250px;"></div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="input_${userId}" placeholder="Type a message..." onkeypress="handleKeypress(event, '${userId}')">
+                        <button onclick="sendMessageForUser('${userId}')">Send</button>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-label">Messages</div>
+                            <div class="stat-value" id="count_${userId}">0</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Channel</div>
+                            <div class="stat-value" style="font-size: 12px;">${user.channel}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button onclick="clearMessagesForUser('${userId}')">Clear</button>
+                        <button onclick="removeUser('${userId}')">Remove</button>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(panel);
+        }
+        
+        // Start polling for a specific user
+        function startPollingForUser(userId) {
+            const user = users[userId];
+            user.pollingInterval = setInterval(() => {
+                pollMessagesForUser(userId);
+            }, 500);
+        }
+        
+        // Poll messages for a specific user
+        function pollMessagesForUser(userId) {
+            const user = users[userId];
+            const url = `http://localhost:4000/apps/${user.appId}/channels/${user.channel}/history?limit=100`;
+            
+            fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.events && data.events.length > 0) {
+                    // Only display events we haven't seen yet
+                    data.events.forEach(event => {
+                        // Extract numeric part of event ID for comparison
+                        const eventNum = parseInt(event.id.replace('evt_', '')) || 0;
+                        const lastNum = user.lastEventId ? parseInt(user.lastEventId.replace('evt_', '')) || 0 : 0;
+                        
+                        if (!user.lastEventId || eventNum > lastNum) {
+                            const isMine = event.meta.user_id === user.username;
+                            const sender = isMine ? 'Me' : (event.meta.user_id || 'User');
+                            addMessageForUser(userId, sender, event.data.text || JSON.stringify(event.data), isMine);
+                            user.messageCount++;
+                            user.lastEventId = event.id;  // Update after each event
+                        }
+                    });
+                    updateCountForUser(userId);
+                }
+            })
+            .catch(error => console.error(`Poll error for ${userId}:`, error));
+        }
+        
+        // Send message for specific user
+        function sendMessageForUser(userId) {
+            const user = users[userId];
+            const input = document.getElementById(`input_${userId}`);
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            const url = `http://localhost:4000/apps/${user.appId}/channels/${user.channel}/publish`;
+            
+            console.log(`Sending from ${user.username}: apiKey=${user.apiKey}, app=${user.appId}, channel=${user.channel}`);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': user.apiKey,
+                    'X-User-Id': user.username
+                },
+                body: JSON.stringify({
+                    type: 'message',
+                    data: { text }
+                })
+            })
+            .then(r => {
+                if (!r.ok) {
+                    console.error(`Publish failed: ${r.status} - ${r.statusText}`);
+                    return r.json().then(data => { throw new Error(data.error || 'Publish failed'); });
+                }
+                return r.json();
+            })
+            .then(() => {
+                addMessageForUser(userId, 'Me', text, true);
+                input.value = '';
+                user.messageCount++;
+                updateCountForUser(userId);
+            })
+            .catch(error => {
+                console.error('Send error:', error);
+                addMessageForUser(userId, 'System', 'Send failed: ' + error.message, false);
+            });
+        }
+        
+        // Add message to specific user's panel
+        function addMessageForUser(userId, sender, text, isOwn) {
+            const container = document.getElementById(`messages_${userId}`);
+            const div = document.createElement('div');
+            div.className = `message ${isOwn ? 'own' : 'other'}`;
+            const time = new Date().toLocaleTimeString();
+            div.innerHTML = `<strong>${sender}:</strong> ${text}<span class="message-time">${time}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Clear messages for specific user
+        function clearMessagesForUser(userId) {
+            document.getElementById(`messages_${userId}`).innerHTML = '';
+            users[userId].messageCount = 0;
+            updateCountForUser(userId);
+        }
+        
+        // Update message count for specific user
+        function updateCountForUser(userId) {
+            document.getElementById(`count_${userId}`).textContent = users[userId].messageCount;
+        }
+        
+        // Remove user
+        function removeUser(userId) {
+            if (users[userId]) {
+                if (users[userId].pollingInterval) {
+                    clearInterval(users[userId].pollingInterval);
+                }
+                delete users[userId];
+                const panel = document.getElementById(`panel_${userId}`);
+                if (panel) panel.remove();
+            }
+        }
+        
+        // Handle keypress for sending
+        function handleKeypress(event, userId) {
+            if (event.key === 'Enter') {
+                sendMessageForUser(userId);
+            }
+        }
+        
+
+        
+
+        
+        // WebSocket Functions
+        function connectWS() {
+            const appId = document.getElementById('wsAppId').value;
+            const channel = document.getElementById('wsChannel').value;
+            const username = document.getElementById('newUsername').value || 'TestUser';
+            
+            if (!appId || !channel) {
+                alert('Please fill App ID and Channel');
+                return;
+            }
+            
+            wsStartTime = Date.now();
+            const params = new URLSearchParams({ 
+                app_id: appId,
+                channel: channel,
+                user_id: username
+            }).toString();
+            
+            try {
+                wsSocket = new WebSocket(`ws://localhost:3000/socket?${params}`);
+                
+                wsSocket.onopen = () => {
+                    wsConnected = true;
+                    updateWSStatus(true);
+                    addWSMessage('System', 'Connected to WebSocket');
+                    console.log('WebSocket connected in', Date.now() - wsStartTime, 'ms');
+                    
+                    // Join channel after small delay
+                    setTimeout(() => joinWSChannel(channel), 100);
+                };
+                
+                wsSocket.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        handleWSMessage(msg);
+                    } catch (e) {
+                        console.error('Failed to parse WS message:', e);
+                    }
+                };
+                
+                wsSocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    addWSMessage('System', 'Connection error');
+                    wsConnected = false;
+                    updateWSStatus(false);
+                };
+                
+                wsSocket.onclose = () => {
+                    wsConnected = false;
+                    updateWSStatus(false);
+                    addWSMessage('System', 'Disconnected');
+                };
+            } catch (e) {
+                console.error('Failed to create WebSocket:', e);
+                alert('Failed to connect: ' + e.message);
+            }
+        }
+        
+        function joinWSChannel(channel) {
+            if (!wsSocket || wsSocket.readyState !== WebSocket.OPEN) return;
+            
+            const msg = {
+                topic: channel,
+                event: 'phx_join',
+                payload: {},
+                ref: wsRef++
+            };
+            
+            console.log('Joining channel:', channel);
+            wsSocket.send(JSON.stringify(msg));
+            addWSMessage('System', `Joining ${channel}...`);
+        }
+        
+        function sendWSMessage() {
+            const input = document.getElementById('wsMessageInput');
+            const text = input.value.trim();
+            const channel = document.getElementById('wsChannel').value;
+            
+            if (!text || !wsSocket || wsSocket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            const startTime = Date.now();
+            
+            const msg = {
+                topic: channel,
+                event: 'publish',
+                payload: {
+                    type: 'message',
+                    data: { text }
+                },
+                ref: wsRef++
+            };
+            
+            wsSocket.send(JSON.stringify(msg));
+            addWSMessage('Me', text);
+            input.value = '';
+            
+            console.log('WebSocket message sent:', Date.now() - startTime, 'ms');
+        }
+        
+        function handleWSMessage(msg) {
+            console.log('Received WS message:', msg);
+            
+            // Handle join replies
+            if (msg.event === 'phx_reply') {
+                addWSMessage('System', `Joined successfully`);
+                return;
+            }
+            
+            // Handle broadcast messages
+            if (msg.event === 'broadcast' || msg.event === 'event') {
+                const payload = msg.payload || {};
+                const text = payload.data?.text || JSON.stringify(payload);
+                addWSMessage('User', text);
+                return;
+            }
+        }
+        
+        function addWSMessage(sender, text) {
+            const container = document.getElementById('wsMessages');
+            const div = document.createElement('div');
+            div.className = `message ${sender === 'Me' ? 'own' : 'other'}`;
+            const time = new Date().toLocaleTimeString();
+            div.innerHTML = `<strong>${sender}:</strong> ${text}<span class="message-time">${time}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function updateWSStatus(connected) {
+            const status = document.getElementById('wsStatus');
+            const text = document.getElementById('wsStatusText');
+            const btn = document.getElementById('wsDisconnectBtn');
+            
+            if (connected) {
+                status.className = 'status connected';
+                text.textContent = 'Connected';
+                btn.disabled = false;
+            } else {
+                status.className = 'status disconnected';
+                text.textContent = 'Disconnected';
+                btn.disabled = true;
+            }
+        }
+        
+        function disconnectWS() {
+            if (wsSocket) {
+                wsSocket.close();
+                wsSocket = null;
+            }
+            wsConnected = false;
+            updateWSStatus(false);
+        }
+        
+        function handleWSKeypress(event) {
+            if (event.key === 'Enter') {
+                sendWSMessage();
+            }
+        }
+        
+        // HTTP API Functions
+        function publishEventHTTP(appId, channelName, type, data) {
+            const apiKey = document.getElementById('apiKey').value;
+            const url = `http://localhost:4000/apps/${appId}/channels/${channelName}/publish`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify({
+                    type: type,
+                    data: data
+                })
+            })
+            .then(r => r.json())
+            .catch(e => console.error('Publish error:', e));
+        }
+        
+        function publishEvent() {
+            const appId = document.getElementById('appId').value;
+            const channelName = document.getElementById('channel').value;
+            const text = document.getElementById('messageText').value;
+            
+            if (!appId || !channelName || !text) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const url = `http://localhost:4000/apps/${appId}/channels/${channelName}/publish`;
+            
+            const startTime = Date.now();
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify({
+                    type: 'message',
+                    data: { text }
+                })
+            })
+            .then(r => {
+                const latency = Date.now() - startTime;
+                console.log('Publish latency:', latency + 'ms');
+                return r.json();
+            })
+            .then(data => {
+                const response = document.getElementById('publishResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Success</div>
+                                 <div class="event-data"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            })
+            .catch(error => {
+                const response = document.getElementById('publishResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Error</div>
+                                 <div class="event-data">${error.message}</div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            });
+        }
+        
+        function getHistory() {
+            const appId = document.getElementById('historyAppId').value;
+            const channelName = document.getElementById('historyChannel').value;
+            const limit = document.getElementById('historyLimit').value;
+            
+            if (!appId || !channelName) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const url = `http://localhost:4000/apps/${appId}/channels/${channelName}/history?limit=${limit}`;
+            
+            fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                const response = document.getElementById('historyResponse');
+                response.innerHTML = '';
+                
+                if (data.events && data.events.length > 0) {
+                    data.events.forEach(event => {
+                        const div = document.createElement('div');
+                        div.className = 'event-item';
+                        div.innerHTML = `<div class="event-time">${event.meta.ts}</div>
+                                         <div class="event-type">${event.type}</div>
+                                         <div class="event-data">${JSON.stringify(event.data)}</div>`;
+                        response.appendChild(div);
+                    });
+                } else {
+                    response.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No events found</div>';
+                }
+                response.scrollTop = 0;
+            })
+            .catch(error => {
+                const response = document.getElementById('historyResponse');
+                response.innerHTML = `<div style="padding: 20px; color: #c62828;">Error: ${error.message}</div>`;
+            });
+        }
+        
+        function checkHealth() {
+            fetch('http://localhost:4000/health')
+            .then(r => r.json())
+            .then(data => {
+                const response = document.getElementById('healthResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Elixir Health</div>
+                                 <div class="event-data"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            })
+            .catch(error => {
+                const response = document.getElementById('healthResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Error</div>
+                                 <div class="event-data">${error.message}</div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            });
+        }
+        
+        function checkProcessorHealth() {
+            fetch('http://localhost:4000/processor-health')
+            .then(r => r.json())
+            .then(data => {
+                const response = document.getElementById('healthResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Go Processor Health</div>
+                                 <div class="event-data"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            })
+            .catch(error => {
+                const response = document.getElementById('healthResponse');
+                const div = document.createElement('div');
+                div.className = 'event-item';
+                div.innerHTML = `<div class="event-time">${new Date().toLocaleTimeString()}</div>
+                                 <div class="event-type">Error</div>
+                                 <div class="event-data">${error.message}</div>`;
+                response.appendChild(div);
+                response.scrollTop = response.scrollHeight;
+            });
+        }
+        
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

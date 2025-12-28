@@ -11,10 +11,10 @@ defmodule Polyglot.HealthCheck do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  def init(state) do
+  def init(_state) do
     # Check health every 10 seconds
     schedule_check()
-    {:ok, %{state | go_processor: :unknown, redis: :unknown, checks_at: DateTime.utc_now()}}
+    {:ok, %{go_processor: :unknown, redis: :unknown, checks_at: DateTime.utc_now()}}
   end
 
   def health_status do
