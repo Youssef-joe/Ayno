@@ -6,6 +6,8 @@ import (
 	"net"
 	"polyglot-processor/pb"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -15,6 +17,10 @@ type Server struct {
 
 func NewServer(processor *Processor) *Server {
 	return &Server{processor: processor}
+}
+
+func NewGrpcServer() *grpc.Server {
+	return grpc.NewServer()
 }
 
 func (s *Server) Process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessResponse, error) {

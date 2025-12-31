@@ -1,7 +1,9 @@
 # Builder stage
-FROM elixir:1.17-alpine AS builder
+FROM elixir:1.17-slim AS builder
 
-RUN apk add --no-cache git build-base gcc make
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git build-essential gcc make postgresql-client libpq-dev protobuf-compiler ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,20 +20,23 @@ RUN mix local.hex --force && \
 COPY . .
 
 # Compile application
-RUN MIX_ENV=prod mix compile
+RUN MIX_ENV=prod SECRET_KEY_BASE=placeholder-for-build JWT_SECRET=placeholder-for-build mix compile
 
 # Build release
-RUN MIX_ENV=prod mix release
+RUN MIX_ENV=prod SECRET_KEY_BASE=placeholder-for-build JWT_SECRET=placeholder-for-build mix release
 
 # Runtime stage
-FROM alpine:latest
+FROM debian:bookworm-slim
 
 # Install runtime dependencies
-RUN apk add --no-cache openssl ncurses-libs ca-certificates bash
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl ca-certificates bash postgresql-client libstdc++6 libgcc1 \
+    libncurses6 zlib1g && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1000 polyglot && \
-    adduser -D -u 1000 -G polyglot polyglot
+RUN groupadd -g 1000 polyglot && \
+    useradd -m -u 1000 -g polyglot polyglot
 
 WORKDIR /app
 

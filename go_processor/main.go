@@ -68,12 +68,12 @@ func (p *Processor) processCpp(event Event) error {
 func main() {
 	processor := &Processor{cppEnabled: true}
 	
-	// Start gRPC server on 9090
-	// go func() {
-	// 	if err := StartGRPCServer("9090", processor); err != nil {
-	// 		log.Printf("gRPC server error: %v", err)
-	// 	}
-	// }()
+	// Start gRPC server on 9090 (Phase 2)
+	go func() {
+		if err := StartGRPCServer("9090", processor); err != nil {
+			log.Printf("gRPC server error: %v", err)
+		}
+	}()
 	
 	// Single event processing
 	http.HandleFunc("/process", func(w http.ResponseWriter, r *http.Request) {

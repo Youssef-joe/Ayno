@@ -11,7 +11,7 @@ defmodule Polyglot.MixProject do
     ]
   end
 
-  # Run ya jjoooe mtnsash "mix help compile.app" to learn about applications.
+  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {Polyglot.Application, []},
@@ -28,8 +28,12 @@ defmodule Polyglot.MixProject do
       {:jason, "~> 1.2"},
       {:redix, "~> 1.2"},
       {:httpoison, "~> 2.0"},
+      # Database
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, "~> 0.18"},
       # gRPC for high-performance communication
       {:grpc, "~> 0.7"},
+      {:protobuf, "~> 0.15"},
       # Authentication & Security
       {:joken, "~> 2.6"},
       # {:bcrypt_elixir, "~> 3.1"},  # Temporarily disabled - requires C++ build tools
@@ -37,14 +41,16 @@ defmodule Polyglot.MixProject do
       {:telemetry, "~> 1.2"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
+      # {:prometheus_ex, "~> 3.0"},  # Phase 2 Extended: Prometheus metrics (planned)
+      # {:prometheus_phoenix, "~> 1.3"},  # Phase 2 Extended: Phoenix integration (planned)
       # Environment & Config
       {:dotenvy, "~> 0.4.0"},
-      # Error tracking (optional)
-      {:sentry, "~> 10.0"},
+      # Error tracking (optional) - disabled for now, enable with valid SENTRY_DSN
+      # {:sentry, "~> 10.0"},
       # Clustering & Distribution
       {:libcluster, "~> 3.3"},
       # Fast event batching
-      {:broadway, "~> 1.0"}
+      {:broadway, "~> 1.0"},
       # Native performance (NIF bindings)
       # {:rustler, "~> 0.32"}  # Temporarily disabled - requires nmake
     ]

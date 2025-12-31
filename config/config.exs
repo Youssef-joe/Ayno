@@ -13,6 +13,23 @@ jwt_secret = System.get_env("JWT_SECRET") || (config_env() == :prod && raise "JW
 app_port = System.get_env("APP_PORT", "4000") |> String.to_integer()
 app_env = config_env()
 
+# PostgreSQL Configuration
+db_host = System.get_env("DB_HOST", "localhost")
+db_port = System.get_env("DB_PORT", "5432") |> String.to_integer()
+db_user = System.get_env("DB_USER", "polyglot")
+db_password = System.get_env("DB_PASSWORD", "polyglot")
+db_name = System.get_env("DB_NAME", "polyglot_#{app_env}")
+
+config :polyglot, Polyglot.Repo,
+  adapter: Ecto.Adapters.Postgres,
+  username: db_user,
+  password: db_password,
+  database: db_name,
+  hostname: db_host,
+  port: db_port,
+  pool_size: String.to_integer(System.get_env("DB_POOL_SIZE", "10")),
+  ssl: System.get_env("DB_SSL", "false") |> String.to_atom()
+
 config :polyglot, Polyglot.Gateway.Endpoint,
   http: [port: app_port],
   server: true,
@@ -42,12 +59,5 @@ config :logger, level: String.to_atom(System.get_env("LOG_LEVEL", "info"))
 config :joken,
   default_signer: jwt_secret
 
-# Sentry Configuration (error tracking)
-if app_env == :prod do
-  config :sentry,
-    dsn: System.get_env("SENTRY_DSN"),
-    environment_name: app_env,
-    enable_source_code_context: true,
-    root_source_code_path: File.cwd!(),
-    included_environments: [:prod]
-end
+# Sentry Configuration (error tracking) - disabled for now
+# To enable: uncomment sentry dependency in mix.exs and set SENTRY_DSN env var

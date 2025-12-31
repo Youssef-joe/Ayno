@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o processor main.go
+RUN go build -o processor main.go server.go
 
 FROM alpine:latest
 
@@ -14,6 +14,6 @@ WORKDIR /app
 
 COPY --from=builder /app/processor .
 
-EXPOSE 8080
+EXPOSE 8080 9090
 
 CMD ["./processor"]

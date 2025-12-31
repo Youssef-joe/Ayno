@@ -7,6 +7,7 @@ defmodule Polyglot.Application do
     redis_url = "redis://#{redis_host}:#{redis_port}"
     
     children = [
+      Polyglot.Repo,
       {Phoenix.PubSub, name: Polyglot.PubSub},
       {Redix, {redis_url, [name: :redix]}},
       Polyglot.Storage,
@@ -17,6 +18,11 @@ defmodule Polyglot.Application do
     ]
 
     opts = [strategy: :one_for_one, name: Polyglot.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, _pid} = Supervisor.start_link(children, opts)
+    
+    # Initialize processor client (circuit breaker + gRPC)
+    Polyglot.ProcessorClient.init_breaker()
+    
+    {:ok, _pid}
   end
 end
