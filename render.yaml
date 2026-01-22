@@ -1,0 +1,92 @@
+services:
+  - type: pserv
+    name: polyglot-postgres
+    plan: starter
+    ipAllowList: []  # Only accessible from other services in this project
+  - type: redis
+    name: polyglot-redis
+    plan: starter
+    ipAllowList: []  # Only accessible from other services in this project
+  - type: private
+    name: go-processor
+    env: docker
+    dockerfilePath: go_processor/Dockerfile
+    envVars:
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health
+  - type: web
+    name: polyglot
+    env: docker
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: MIX_ENV
+        value: prod
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: polyglot-postgres
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: polyglot-postgres
+          property: port
+      - key: DB_USER
+        fromService:
+          type: pserv
+          name: polyglot-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: polyglot-postgres
+          property: password
+      - key: DB_NAME
+        fromService:
+          type: pserv
+          name: polyglot-postgres
+          property: database
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: polyglot-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: polyglot-redis
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          type: redis
+          name: polyglot-redis
+          property: password
+      - key: APP_PORT
+        fromSecret: PORT  # Render sets PORT for web services
+      - key: APP_HOST
+        value: polyglot.onrender.com  # Will be replaced with actual URL
+      - key: LOG_LEVEL
+        value: info
+      - key: GO_PROCESSOR_URL
+        value: http://go-processor:8080
+      - key: GO_PROCESSOR_GRPC_HOST
+        fromService:
+          type: private
+          name: go-processor
+          property: host
+      - key: GO_PROCESSOR_GRPC_PORT
+        value: 9090
+      - key: USE_GRPC
+        value: true
+      - key: CORS_ORIGINS
+        value: https://polyglot.onrender.com,http://localhost:3000  # Update as needed
+      - key: DB_SSL
+        value: true  # Enable SSL for Render Postgres
+      - key: DB_POOL_SIZE
+        value: 5  # Lower for Render free tier
+    healthCheckPath: /health
