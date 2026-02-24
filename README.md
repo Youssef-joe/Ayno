@@ -9,7 +9,7 @@ A multi-tenant realtime platform built with Elixir Phoenix, supporting WebSocket
 - **Elixir Gateway**: Phoenix WebSocket/HTTP server with multi-tenant channels
 - **Go Processor**: Event processing and analytics (HTTP on port 8080)
 - **C++ Driver**: Ultra-low latency processing (optional)
-- **Storage**: In-memory ETS for history, Redis for sessions
+- **Storage**: Postgres for tenant/API/user records, Redis for sessions/ephemeral state, optional ClickHouse analytics sink in Go processor
 
 ## Quick Start
 
@@ -23,6 +23,7 @@ This starts:
 - Nginx load balancer on `http://localhost`
 - Elixir server on `localhost:4000` (internal)
 - Go processor on `localhost:8080` (internal)
+- PostgreSQL on `localhost:5432` (internal)
 - Redis on `localhost:6379` (internal)
 
 ### Scaling
@@ -42,7 +43,7 @@ The load balancer automatically distributes traffic.
 
 1. Build components:
 ```bash
-make all  # or manually: cd go_processor && go build -o processor main.go
+make all  # or manually: cd go_processor && go build -o processor .
 ```
 
 2. Start services:
@@ -52,6 +53,7 @@ cd go_processor && ./processor
 
 # Terminal 2: Elixir Gateway
 mix deps.get
+mix ecto.setup
 mix phx.server
 ```
 
@@ -63,7 +65,7 @@ curl http://localhost:4000/health
 # Publish event
 curl -X POST http://localhost:4000/apps/demo-app/channels/room:test/publish \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: valid_key_demo-app" \
+  -H "X-API-Key: demo-app-local-key" \
   -d '{"type": "message", "data": {"text": "Hello World"}}'
 
 # Get history
@@ -93,7 +95,7 @@ channel.on("event", (event) => console.log(event));
 ```bash
 # Publish
 curl -X POST /apps/{app_id}/channels/{channel}/publish \
-  -H "X-API-Key: valid_key_{app_id}" \
+  -H "X-API-Key: <postgres-backed-api-key>" \
   -d '{"type": "message", "data": {"text": "Hello"}}'
 
 # History
@@ -127,7 +129,9 @@ mix test
 
 - Elixir 1.17+
 - Go 1.21+
-- Redis (optional, for future persistence)
+- PostgreSQL
+- Redis
+- ClickHouse (optional, when `ANALYTICS_BACKEND=clickhouse`)
 
 ## License
 

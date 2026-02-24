@@ -28,7 +28,7 @@ echo "Starting Go Processor..."
 cd go_processor
 if [ ! -f processor ]; then
     echo "Building Go processor..."
-    go build -o processor main.go
+    go build -o processor .
 fi
 ./processor > /tmp/polyglot_go.log 2>&1 &
 GO_PID=$!
@@ -73,7 +73,7 @@ echo ""
 echo "🧪 Test:"
 echo "  curl -X POST http://localhost:4000/apps/demo-app/channels/room:test/publish \\"
 echo "    -H 'Content-Type: application/json' \\"
-echo "    -H 'X-API-Key: valid_key_demo-app' \\"
+echo "    -H 'X-API-Key: demo-app-local-key' \\"
 echo "    -d '{\"type\": \"message\", \"data\": {\"text\": \"Hello\"}}'"
 echo ""
 echo "❌ Stop all services:"

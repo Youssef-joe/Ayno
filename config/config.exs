@@ -6,12 +6,29 @@ if Code.ensure_loaded?(Dotenvy) do
 end
 
 # Get required secrets
-secret_key_base = System.get_env("SECRET_KEY_BASE") || (config_env() == :prod && raise "SECRET_KEY_BASE not set") || "dev-secret-key"
+secret_key_base =
+  System.get_env("SECRET_KEY_BASE") || (config_env() == :prod && raise("SECRET_KEY_BASE not set")) ||
+    "dev-secret-key"
+
 redis_host = System.get_env("REDIS_HOST", "localhost")
 redis_port = System.get_env("REDIS_PORT", "6379") |> String.to_integer()
-jwt_secret = System.get_env("JWT_SECRET") || (config_env() == :prod && raise "JWT_SECRET not set") || "dev-jwt-secret"
+
+jwt_secret =
+  System.get_env("JWT_SECRET") || (config_env() == :prod && raise("JWT_SECRET not set")) ||
+    "dev-jwt-secret"
+
 app_port = System.get_env("APP_PORT", "4000") |> String.to_integer()
 app_env = config_env()
+
+parse_bool = fn value, default ->
+  case String.downcase(System.get_env(value, default)) do
+    "1" -> true
+    "true" -> true
+    "yes" -> true
+    "on" -> true
+    _ -> false
+  end
+end
 
 # PostgreSQL Configuration
 db_host = System.get_env("DB_HOST", "localhost")
@@ -30,6 +47,8 @@ config :polyglot, Polyglot.Repo,
   pool_size: String.to_integer(System.get_env("DB_POOL_SIZE", "10")),
   ssl: System.get_env("DB_SSL", "false") |> String.to_atom()
 
+config :polyglot, ecto_repos: [Polyglot.Repo]
+
 config :polyglot, Polyglot.Gateway.Endpoint,
   http: [port: app_port],
   server: true,
@@ -37,7 +56,7 @@ config :polyglot, Polyglot.Gateway.Endpoint,
   url: [host: System.get_env("APP_HOST", "localhost"), port: app_port],
   # Security headers
   cors: [
-    origins: (System.get_env("CORS_ORIGINS", "http://localhost:3000") |> String.split(",")),
+    origins: System.get_env("CORS_ORIGINS", "http://localhost:3000") |> String.split(","),
     credentials: true,
     max_age: 3600
   ]
@@ -58,6 +77,22 @@ config :logger, level: String.to_atom(System.get_env("LOG_LEVEL", "info"))
 # JWT Configuration
 config :joken,
   default_signer: jwt_secret
+
+config :polyglot, :auth,
+  require_tenant_config:
+    parse_bool.("AUTH_REQUIRE_TENANT_CONFIG", if(app_env == :prod, do: "true", else: "false")),
+  require_user_records:
+    parse_bool.("AUTH_REQUIRE_USER_RECORDS", if(app_env == :prod, do: "true", else: "false")),
+  allow_legacy_api_keys:
+    parse_bool.("ALLOW_LEGACY_API_KEYS", if(app_env == :prod, do: "false", else: "true"))
+
+config :polyglot, :session_store,
+  session_ttl_seconds: System.get_env("SESSION_TTL_SECONDS", "3600") |> String.to_integer(),
+  presence_ttl_seconds: System.get_env("PRESENCE_TTL_SECONDS", "120") |> String.to_integer()
+
+config :polyglot, :storage,
+  history_ttl_seconds: System.get_env("HISTORY_TTL_SECONDS", "3600") |> String.to_integer(),
+  history_max_events: System.get_env("HISTORY_MAX_EVENTS", "1000") |> String.to_integer()
 
 # Sentry Configuration (error tracking) - disabled for now
 # To enable: uncomment sentry dependency in mix.exs and set SENTRY_DSN env var

@@ -7,7 +7,8 @@ defmodule Polyglot.MixProject do
       version: "0.1.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -16,6 +17,15 @@ defmodule Polyglot.MixProject do
     [
       mod: {Polyglot.Application, []},
       extra_applications: [:logger]
+    ]
+  end
+
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
 
@@ -50,7 +60,7 @@ defmodule Polyglot.MixProject do
       # Clustering & Distribution
       {:libcluster, "~> 3.3"},
       # Fast event batching
-      {:broadway, "~> 1.0"},
+      {:broadway, "~> 1.0"}
       # Native performance (NIF bindings)
       # {:rustler, "~> 0.32"}  # Temporarily disabled - requires nmake
     ]

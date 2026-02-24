@@ -6,6 +6,7 @@
 - Elixir 1.17+
 - Go 1.21+
 - Redis
+- PostgreSQL
 
 ### Step 1: Install Redis
 
@@ -22,7 +23,7 @@ docker run -d -p 6379:6379 --name polyglot-redis redis:7-alpine
 ### Step 2: Start Go Processor (Terminal 1)
 ```bash
 cd go_processor
-go build -o processor main.go
+go build -o processor .
 ./processor
 ```
 
@@ -54,7 +55,7 @@ curl http://localhost:8080/health
 ```bash
 curl -X POST http://localhost:4000/apps/demo-app/channels/room:test/publish \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: valid_key_demo-app" \
+  -H "X-API-Key: demo-app-local-key" \
   -d '{"type": "message", "data": {"text": "Hello World"}}'
 ```
 
@@ -117,20 +118,21 @@ cp .env.example .env
 Key variables:
 - `SECRET_KEY_BASE` - Elixir secret key
 - `JWT_SECRET` - JWT secret
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` - PostgreSQL config
 - `REDIS_HOST` - Redis hostname (default: localhost)
 - `REDIS_PORT` - Redis port (default: 6379)
 - `GO_PROCESSOR_URL` - Go processor URL (default: http://localhost:8080)
+- `ANALYTICS_BACKEND` - `none` or `clickhouse`
 - `LOG_LEVEL` - Logging level (debug, info, warn, error)
 
 ## API Keys
 
-API keys follow format: `valid_key_{app_id}`
+API keys are stored in Postgres (`api_keys.key_hash`).
+For local setup, `mix ecto.setup` seeds:
+- app: `demo-app`
+- key: `demo-app-local-key`
 
-Examples:
-- `valid_key_demo-app` - for app_id "demo-app"
-- `valid_key_my-app` - for app_id "my-app"
-
-Pass via header: `-H "X-API-Key: valid_key_{app_id}"`
+Pass via header: `-H "X-API-Key: demo-app-local-key"`
 
 ## Stopping Services
 
@@ -149,14 +151,16 @@ Nginx (80)
   ↓
 Elixir Phoenix (4000)
   ├→ PubSub (Redis)
-  ├→ Storage (ETS)
+  ├→ Operational data (Postgres)
+  ├→ Sessions/history (Redis, ephemeral)
   └→ Go Processor (8080)
-       └→ C++ Driver (optional)
+       ├→ C++ Driver (optional)
+       └→ ClickHouse analytics (optional)
 ```
 
 ## Performance Notes
 
 - Single event processing: ~1ms
 - Batch processing (10 events): ~2ms
-- In-memory ETS storage for history
-- Redis for distributed PubSub (when scaling)
+- Redis-backed ephemeral history/session state
+- Postgres-backed tenant, API key, and user records

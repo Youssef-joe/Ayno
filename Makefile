@@ -4,7 +4,7 @@ build-cpp:
 	cd cpp_driver && make
 
 build-go:
-	cd go_processor && go build -o processor main.go server.go
+	cd go_processor && go build -o processor .
 
 build-grpc: build-go
 	@echo "✓ gRPC server enabled (port 9090)"

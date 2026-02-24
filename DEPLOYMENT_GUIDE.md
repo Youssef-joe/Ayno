@@ -39,7 +39,7 @@ redis-server
 **Terminal 2: Go Processor**
 ```bash
 cd go_processor
-go build -o processor main.go server.go
+go build -o processor .
 ./processor
 ```
 
@@ -57,7 +57,7 @@ curl http://localhost:4000/health
 # Publish event
 curl -X POST http://localhost:4000/apps/demo-app/channels/room:test/publish \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: valid_key_demo-app" \
+  -H "X-API-Key: demo-app-local-key" \
   -d '{"type": "message", "data": {"text": "Hello"}}'
 
 # Get history
@@ -82,7 +82,7 @@ cd go_processor && go mod tidy && cd ..
 
 # Build
 mix compile
-cd go_processor && go build -o processor main.go server.go && cd ..
+cd go_processor && go build -o processor . && cd ..
 ```
 
 ### Running Services
@@ -106,7 +106,7 @@ iex -S mix phx.server
 # In another terminal, test
 curl -X POST http://localhost:4000/apps/test/channels/room:1/publish \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: valid_key_test" \
+  -H "X-API-Key: demo-app-local-key" \
   -d '{"type":"msg","data":{"text":"test"}}'
 ```
 
@@ -119,9 +119,11 @@ curl -X POST http://localhost:4000/apps/test/channels/room:1/publish \
 ```
 Load Balancer (Nginx/HAProxy)
     ↓
-Polyglot (3 instances)  ← Redis Cluster
+Polyglot (3 instances)  ← Redis Cluster + Postgres
     ↓
 Go Processors (2 instances)
+    ↓
+ClickHouse (optional analytics sink)
     ↓
 C++ Driver (optional)
 ```

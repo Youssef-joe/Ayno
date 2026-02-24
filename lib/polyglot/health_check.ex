@@ -14,7 +14,9 @@ defmodule Polyglot.HealthCheck do
   def init(_state) do
     # Check health every 10 seconds
     schedule_check()
-    {:ok, %{go_processor: :unknown, redis: :unknown, checks_at: DateTime.utc_now()}}
+
+    {:ok,
+     %{go_processor: :unknown, redis: :unknown, postgres: :unknown, checks_at: DateTime.utc_now()}}
   end
 
   def health_status do
@@ -30,6 +32,7 @@ defmodule Polyglot.HealthCheck do
       state
       | go_processor: check_go_processor(),
         redis: check_redis(),
+        postgres: check_postgres(),
         checks_at: DateTime.utc_now()
     }
 
@@ -38,13 +41,15 @@ defmodule Polyglot.HealthCheck do
   end
 
   defp build_status(state) do
-    all_healthy = state.go_processor == :healthy and state.redis == :healthy
+    all_healthy =
+      state.go_processor == :healthy and state.redis == :healthy and state.postgres == :healthy
 
     %{
       status: if(all_healthy, do: "healthy", else: "degraded"),
       checks: %{
         go_processor: state.go_processor,
-        redis: state.redis
+        redis: state.redis,
+        postgres: state.postgres
       },
       checked_at: state.checks_at,
       ready: all_healthy
@@ -68,6 +73,18 @@ defmodule Polyglot.HealthCheck do
   defp check_redis do
     case Redix.command(:redix, ["PING"]) do
       {:ok, "PONG"} ->
+        :healthy
+
+      _ ->
+        :unhealthy
+    end
+  rescue
+    _ -> :unhealthy
+  end
+
+  defp check_postgres do
+    case Ecto.Adapters.SQL.query(Polyglot.Repo, "SELECT 1", []) do
+      {:ok, _} ->
         :healthy
 
       _ ->

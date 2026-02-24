@@ -2,6 +2,8 @@ defmodule Polyglot.Repo.Migrations.InitialSchema do
   use Ecto.Migration
 
   def change do
+    execute("CREATE EXTENSION IF NOT EXISTS pgcrypto", "")
+
     # API Keys table for authentication
     create table(:api_keys, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
