@@ -227,7 +227,7 @@ After each chaos test, document:
 
 ## Safety Notes
 
-⚠️ **WARNING:** Only run chaos tests in:
+WARNING: Only run chaos tests in:
 - Development environments
 - Staging environments with production-like data
 - Production with extreme caution and proper safeguards
