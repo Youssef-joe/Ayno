@@ -456,11 +456,11 @@ curl http://localhost:4000/api/debug/circuit-breaker
 Monitor these metrics:
 
 ```
-✅ Error rate (< 1%)
-✅ Response latency P99 (< 100ms)
-✅ Circuit breaker status (should be closed)
-✅ /ready endpoint (should be 200)
-✅ Go processor availability (should be 100%)
+Error rate (< 1%)
+Response latency P99 (< 100ms)
+Circuit breaker status (should be closed)
+/ready endpoint (should be 200)
+Go processor availability (should be 100%)
 ```
 
 ---

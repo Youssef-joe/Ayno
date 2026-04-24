@@ -2,7 +2,7 @@
 
 This directory contains production-grade benchmarking tools for comprehensive performance validation.
 
-## 📋 What's Included
+## What's Included
 
 ### k6 Load Tests (`k6/`)
 - **load_test.js** - Comprehensive load test with staged ramp-up, WebSocket testing, and custom metrics
@@ -28,7 +28,7 @@ This directory contains production-grade benchmarking tools for comprehensive pe
   - Redis (slow log, memory analysis)
   - System-wide (perf, eBPF)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -76,7 +76,7 @@ cd benchmarks
 ./run_all_benchmarks.sh legacy
 ```
 
-## 📊 Test Scenarios
+## Test Scenarios
 
 ### 1. Load Test (k6/load_test.js)
 
@@ -132,7 +132,7 @@ k6 run benchmarks/k6/soak_test.js
 wrk -t4 -c200 -d30s -s benchmarks/wrk/throughput.lua http://localhost:4000
 ```
 
-## 📈 Metrics Collected
+## Metrics Collected
 
 ### k6 Metrics
 - **http_req_duration**: Request latency (P95, P99)
@@ -150,7 +150,7 @@ wrk -t4 -c200 -d30s -s benchmarks/wrk/throughput.lua http://localhost:4000
 - Percentiles (50th → 99.9th)
 - Error count
 
-## 🎯 Performance Targets
+## Performance Targets
 
 | Metric | Target | Critical Threshold |
 |--------|--------|-------------------|
@@ -160,7 +160,7 @@ wrk -t4 -c200 -d30s -s benchmarks/wrk/throughput.lua http://localhost:4000
 | Throughput | > 10k req/s | < 5k req/s |
 | WebSocket Connect | < 50ms | > 100ms |
 
-## 🔬 Advanced Usage
+## Advanced Usage
 
 ### Environment Variables
 
@@ -192,7 +192,7 @@ k6 run --out json=results/load_test.json benchmarks/k6/load_test.js
 diff -u baseline.md optimized.md
 ```
 
-## 🧪 Chaos Engineering
+## Chaos Engineering
 
 See [chaos/README.md](chaos/README.md) for detailed scenarios:
 
@@ -203,7 +203,7 @@ See [chaos/README.md](chaos/README.md) for detailed scenarios:
 5. **CPU Throttling** - Limit resources, validate backpressure
 6. **gRPC Failover** - Block port 9090, verify HTTP fallback
 
-## 📝 Reports
+## Reports
 
 Results are saved to `benchmarks/results/`:
 - `k6_*.log` - k6 test logs
@@ -211,7 +211,7 @@ Results are saved to `benchmarks/results/`:
 - `wrk_*.txt` - wrk output
 - `benchmark_report_*.md` - Auto-generated summary
 
-## 🤖 CI/CD Integration
+## CI/CD Integration
 
 The benchmark suite is integrated into GitHub Actions (`.github/workflows/ci.yml`):
 
@@ -220,7 +220,7 @@ The benchmark suite is integrated into GitHub Actions (`.github/workflows/ci.yml
 - Automatic artifact upload
 - Slack notifications on failures
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 ### k6 not found
 ```bash
@@ -246,7 +246,7 @@ docker-compose restart
 wscat -c ws://localhost:4000/socket/websocket
 ```
 
-## 📚 Resources
+## Resources
 
 - [k6 Documentation](https://k6.io/docs/)
 - [wrk GitHub](https://github.com/wg/wrk)

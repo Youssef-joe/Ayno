@@ -134,7 +134,7 @@ Concurrency  Throughput   Per-client
 
 ## Recommendations by Use Case
 
-### ✅ Perfect Fit
+### Perfect Fit
 - **Chat/Messaging Apps**: 2k-5k msg/sec
   - Headroom: 5.5x
   - Status: Production-ready now
@@ -147,7 +147,7 @@ Concurrency  Throughput   Per-client
   - Headroom: 2-5x
   - Status: Production-ready now
 
-### ⚠️ Needs Optimization
+### Needs Optimization
 - **Real-time Analytics**: 10k-50k events/sec
   - Gap: 0.4x - 2x
   - Solution: Phase 1-2 optimizations
@@ -158,7 +158,7 @@ Concurrency  Throughput   Per-client
   - Solution: Add Redis, optimize pooling
   - Timeline: 1-2 weeks
 
-### ❌ Requires Major Changes
+### Requires Major Changes
 - **High-freq Trading**: 100k+ events/sec
   - Gap: 4-10x
   - Solution: Phase 3 + C++ layer
@@ -265,10 +265,10 @@ Time-series DB (InfluxDB) for analytics
 ## Conclusion
 
 Polyglot is **production-ready** for:
-- ✅ Chat and messaging platforms
-- ✅ Gaming and gaming analytics
-- ✅ Social networks and feeds
-- ✅ Low-frequency financial systems (< 10k events/sec)
+- Chat and messaging platforms
+- Gaming and gaming analytics
+- Social networks and feeds
+- Low-frequency financial systems (< 10k events/sec)
 
 The system demonstrates solid engineering with:
 - Clean architecture (separation of concerns)

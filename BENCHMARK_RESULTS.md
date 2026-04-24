@@ -111,8 +111,8 @@ The system demonstrates **solid performance for a prototype** with:
 - Sub-10ms latency for individual operations
 - Capable of handling 25k concurrent requests
 - Efficient batch processing in Go
-- ⚠️ Limited by HTTP request overhead
-- ⚠️ Single-node architecture
+- Limited by HTTP request overhead
+- Single-node architecture
 
 **Verdict:** Production-ready for small-to-medium deployments (< 5k req/s).  
 For high-frequency trading (ticker: 100k+ events/s), requires C++ layer and protocol optimization.
