@@ -60,7 +60,9 @@ defmodule Polyglot.MixProject do
       # Clustering & Distribution
       {:libcluster, "~> 3.3"},
       # Fast event batching
-      {:broadway, "~> 1.0"}
+      {:broadway, "~> 1.0"},
+      # Rate limiting
+      {:hammer, "~> 6.0"},
       # Native performance (NIF bindings)
       # {:rustler, "~> 0.32"}  # Temporarily disabled - requires nmake
     ]

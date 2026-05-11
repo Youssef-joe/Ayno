@@ -32,24 +32,72 @@ defmodule Polyglot.Storage do
          {:ok, encoded} <- Jason.encode(event),
          ttl when ttl > 0 <- history_ttl_seconds(),
          max_events when max_events > 0 <- history_max_events(),
-         {:ok, _} <-
+         {:ok, responses} <-
            Redix.pipeline(:redix, [
              ["LPUSH", history_key(channel), encoded],
              ["LTRIM", history_key(channel), "0", Integer.to_string(max_events - 1)],
              ["EXPIRE", history_key(channel), Integer.to_string(ttl)]
-           ]) do
+           ]),
+         true <- validate_pipeline_responses(responses, channel) do
       :ok
     else
       {:error, reason} ->
         Logger.debug("Redis history store failed for #{channel}: #{inspect(reason)}")
         :fallback
 
+      false ->
+        Logger.warning("Redis pipeline validation failed for #{channel}")
+        :fallback
+
       _ ->
         :fallback
     end
   rescue
-    _ ->
+    e ->
+      Logger.error("Redis pipeline error for #{channel}: #{inspect(e)}")
       :fallback
+  end
+
+  # Validates that all three pipeline commands (LPUSH, LTRIM, EXPIRE) succeeded
+  defp validate_pipeline_responses([lpush_resp, ltrim_resp, expire_resp], channel) do
+    case {lpush_resp, ltrim_resp, expire_resp} do
+      # LPUSH returns integer (list length), LTRIM returns :ok, EXPIRE returns 1 (key existed)
+      {lpush_count, :ok, expire_result}
+      when is_integer(lpush_count) and lpush_count > 0 and is_integer(expire_result) ->
+        if expire_result == 1 do
+          true
+        else
+          Logger.warning(
+            "Redis EXPIRE returned #{expire_result} for #{channel} (key may not exist)"
+          )
+
+          true  # Still consider it success - key might have been removed by TTL
+        end
+
+      {lpush_count, :ok, {:error, expire_error}} when is_integer(lpush_count) ->
+        Logger.error("Redis EXPIRE command failed: #{inspect(expire_error)}")
+        false
+
+      {_, {:error, ltrim_error}, _} ->
+        Logger.error("Redis LTRIM command failed: #{inspect(ltrim_error)}")
+        false
+
+      {_, _, {:error, expire_error}} ->
+        Logger.error("Redis EXPIRE command failed: #{inspect(expire_error)}")
+        false
+
+      unexpected ->
+        Logger.warning("Unexpected Redis pipeline response: #{inspect(unexpected)}")
+        false
+    end
+  end
+
+  defp validate_pipeline_responses(responses, channel) do
+    Logger.warning(
+      "Redis pipeline returned unexpected number of responses for #{channel}: #{length(responses)} (expected 3)"
+    )
+
+    false
   end
 
   defp read_from_redis(channel, limit) do
