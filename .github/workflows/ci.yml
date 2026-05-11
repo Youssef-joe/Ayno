@@ -1,164 +1,136 @@
-name: CI/CD
+name: Polyglot CI/CD with Performance Testing
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main ]
+
+env:
+  ELIXIR_VERSION: '1.15'
+  ERLANG_VERSION: '26.0'
+  GO_VERSION: '1.21'
+  POSTGRES_VERSION: '15'
+  REDIS_VERSION: '7'
 
 jobs:
-  test:
-    name: Test
+  build-and-test:
     runs-on: ubuntu-latest
-
     services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: polyglot_test
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
       redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        image: redis:${{ env.REDIS_VERSION }}
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           - 6379:6379
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Elixir
-        uses: erlef/setup-elixir@v1
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
         with:
-          elixir-version: 1.17
-          otp-version: 27
-
-      - name: Cache deps
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.ERLANG_VERSION }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Cache Elixir dependencies
         uses: actions/cache@v3
         with:
-          path: deps
+          path: |
+            deps
+            _build
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
-
-      - name: Cache build
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Cache Go modules
         uses: actions/cache@v3
         with:
-          path: _build
-          key: ${{ runner.os }}-build-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+      - name: Install Elixir dependencies
+        run: cd apps/gateway && mix deps.get && mix compile
+      - name: Install Go dependencies
+        run: cd services/processor && go mod download
+      - name: Run Elixir tests
+        run: cd apps/gateway && mix test
+      - name: Run Go tests
+        run: cd services/processor && go test -race -coverprofile=coverage.out ./...
+      - name: Check Elixir formatting
+        run: cd apps/gateway && mix format --check-formatted
+      - name: Run Go vet
+        run: cd services/processor && go vet ./...
 
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Check code format
-        run: mix format --check-formatted
-
-      - name: Compile
-        run: mix compile --all-warnings
-
-      - name: Run tests
-        run: mix test
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
         env:
-          REDIS_HOST: localhost
-
-      - name: Run benchmarks
-        run: mix run benchmarks/benchmark.exs
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: polyglot_bench
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Elixir
-        uses: erlef/setup-elixir@v1
+      - name: Set up k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz -L | tar xz -C /tmp
+          sudo cp /tmp/k6-v0.47.0-linux-amd64/k6 /usr/local/bin/k6
+      - name: Start services
+        run: docker-compose up -d && sleep 30 && curl --retry 10 --retry-delay 5 http://localhost:4000/health
+      - name: Run k6 load test
+        run: k6 run --out json=results/load_test.json benchmarks/k6/load_test.js
+        env:
+          BASE_URL: http://localhost:4000
+          WS_URL: ws://localhost:4000/socket/websocket
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
         with:
-          elixir-version: 1.17
-          otp-version: 27
+          name: benchmark-results
+          path: results/*.json
+      - name: Stop services
+        if: always()
+        run: docker-compose down
 
-      - name: Cache deps
-        uses: actions/cache@v3
-        with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Audit dependencies
-        run: mix deps.audit
-
-  docker:
-    name: Build Docker Image
+  docker-build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build
-        uses: docker/build-push-action@v4
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Gateway
+        uses: docker/build-push-action@v5
         with:
           context: .
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  lint:
-    name: Lint & Static Analysis
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Elixir
-        uses: erlef/setup-elixir@v1
+          file: ./apps/gateway/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/polyglot-gateway:${{ github.sha }}
+      - name: Build and push Processor
+        uses: docker/build-push-action@v5
         with:
-          elixir-version: 1.17
-          otp-version: 27
-
-      - name: Cache deps
-        uses: actions/cache@v3
-        with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Credo linter
-        run: mix credo suggest --strict || true
-
-  # Deploy to staging on successful main push
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to staging
-        env:
-          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
-          DEPLOY_USER: ${{ secrets.STAGING_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          
-          ssh $DEPLOY_USER@$DEPLOY_HOST 'cd /app/polyglot && \
-            git pull origin main && \
-            docker-compose pull && \
-            docker-compose up -d'
+          context: ./services/processor
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/polyglot-processor:${{ github.sha }}

@@ -174,7 +174,7 @@ Expected results:
 Load: 1,000 users, 2 messages/sec per user = 2,000 msg/sec
 Polyglot throughput: 11,000 req/s
 Capacity: 5.5x headroom
-Result: ✅ PERFECT FIT
+Result: PERFECT FIT
 ```
 
 ### Scenario 2: Trading System (Low Frequency)
@@ -182,7 +182,7 @@ Result: ✅ PERFECT FIT
 Load: 10 symbols, 100 updates/sec = 1,000 updates/sec
 Polyglot throughput: 25,000 req/s (concurrent)
 Capacity: 25x headroom
-Result: ✅ EXCELLENT
+Result: EXCELLENT
 ```
 
 ### Scenario 3: Real-Time Analytics
@@ -191,7 +191,7 @@ Load: 50,000 events/sec (high volume)
 Polyglot throughput: 11,000 req/s (sequential)
                     25,000 req/s (concurrent)
 Capacity: 0.5x - 2.5x
-Result: ⚠️ NEEDS OPTIMIZATION (Phase 1-2)
+Result: NEEDS OPTIMIZATION (Phase 1-2)
 ```
 
 ### Scenario 4: High-Frequency Trading
@@ -199,7 +199,7 @@ Result: ⚠️ NEEDS OPTIMIZATION (Phase 1-2)
 Load: 1,000,000 ticks/sec (ultra-high frequency)
 Polyglot throughput: 11,000-25,000 req/s
 Capacity: 0.01x - 0.025x
-Result: ❌ REQUIRES C++ LAYER + Phase 3
+Result: REQUIRES C++ LAYER + Phase 3
 ```
 
 ---
@@ -207,10 +207,10 @@ Result: ❌ REQUIRES C++ LAYER + Phase 3
 ## Recommendations
 
 ### Immediate Actions
-1. ✅ Current performance is **production-ready for chat, gaming, social apps**
-2. ✅ Fine for **low-frequency trading** (< 10k updates/sec)
-3. ⚠️ Needs optimization for **streaming/analytics** (10k-50k events/sec)
-4. ❌ Requires major redesign for **high-frequency trading** (100k+ events/sec)
+1. Current performance is **production-ready for chat, gaming, social apps**
+2. Fine for **low-frequency trading** (< 10k updates/sec)
+3. Needs optimization for **streaming/analytics** (10k-50k events/sec)
+4. Requires major redesign for **high-frequency trading** (100k+ events/sec)
 
 ### Next Steps
 1. Deploy with 2-3 instances behind load balancer
@@ -238,10 +238,10 @@ cd benchmarks && go run latency_bench.go
 ## Conclusion
 
 Polyglot demonstrates **solid performance for a prototype realtime engine** with:
-- ✅ Sub-20ms latency for most operations
-- ✅ Capable of 25k concurrent requests
-- ✅ Efficient event processing pipeline
-- ✅ Low memory footprint
+- Sub-20ms latency for most operations
+- Capable of 25k concurrent requests
+- Efficient event processing pipeline
+- Low memory footprint
 
 Perfect for deployment in **communication apps** and **financial systems with < 10k events/sec**.
 
